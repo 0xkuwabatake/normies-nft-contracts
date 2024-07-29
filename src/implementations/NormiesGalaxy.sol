@@ -120,10 +120,10 @@ contract NormiesGalaxy is
     // ============================================================================================
 
     constructor() ERC721ST("Normies Spaceventure Galaxy","NSLXY") {
-        poapContract = IPOAPContract(0x000000008e12c2701d9Be1BfC20F29185f892Fcc);
         _initializeOwner(tx.origin);
         _setTransferValidator(0xA000027A9B2802E1ddf7000061001e5c005A0000);                                                               
-        _setDefaultRoyalty(0x351e20B00e2B42CC34Aa58d0D96aA00d4D91dabc, 25); 
+        _setDefaultRoyalty(0x351e20B00e2B42CC34Aa58d0D96aA00d4D91dabc, 25);
+        poapContract = IPOAPContract(0x000000008e12c2701d9Be1BfC20F29185f892Fcc);
     }
 
     // ============================================================================================
@@ -370,11 +370,11 @@ contract NormiesGalaxy is
         uint256 i;
         unchecked {
             do {
+                if (subTierIds[i] == 0 || subTierIds[i] > 3) _revert(InvalidSubTierId.selector);
+                _validateNumberMinted(recipients[i], tierId);
                 if (!poapContract.isTierOwned(recipients[i], tierId)) {
                     _revert(InvalidOwnerOfTierIdFromPoapContract.selector);
                 } 
-                if (subTierIds[i] == 0 || subTierIds[i] > 3) _revert(InvalidSubTierId.selector);
-                _validateNumberMinted(recipients[i], tierId);
                 _validateClaimedSubTier(tierId, subTierIds[i]);
                 _safeMintSubTier(recipients[i], tierId, subTierIds[i]);
                 ++i;
