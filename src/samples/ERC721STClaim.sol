@@ -96,10 +96,10 @@ contract ERC721STClaim is
     ///////// CONSTRUCTOR /////////////////////////////////////////////////////////////////////////O-'
 
     constructor() ERC721ST("ERC721ST Claim","ST_CLAIM") {
-        poapContract = IPOAPContract(0xf108a39b00FCA4df3e7405A1784CC966D9612258);
         _initializeOwner(tx.origin);
         _setTransferValidator(0xA000027A9B2802E1ddf7000061001e5c005A0000);                                                               
-        _setDefaultRoyalty(0xfa98aFe34D343D0e63C4C801EBce01d9D4459ECa, 25); 
+        _setDefaultRoyalty(0xfa98aFe34D343D0e63C4C801EBce01d9D4459ECa, 25);
+        poapContract = IPOAPContract(0xf108a39b00FCA4df3e7405A1784CC966D9612258);
     }
 
     ///////// EXTERNAL FUNCTIONS //////////////////////////////////////////////////////////////////O-'
@@ -338,11 +338,11 @@ contract ERC721STClaim is
         uint256 i;
         unchecked {
             do {
+                if (subTierIds[i] == 0 || subTierIds[i] > 3) _revert(InvalidSubTierId.selector);
+                _validateNumberMinted(recipients[i], tierId);
                 if (!poapContract.isTierOwned(recipients[i], tierId)) {
                     _revert(InvalidOwnerOfTierIdFromPoapContract.selector);
                 } 
-                if (subTierIds[i] == 0 || subTierIds[i] > 3) _revert(InvalidSubTierId.selector);
-                _validateNumberMinted(recipients[i], tierId);
                 _validateClaimedSubTier(tierId, subTierIds[i]);
                 _safeMintSubTier(recipients[i], tierId, subTierIds[i]);
                 ++i;
