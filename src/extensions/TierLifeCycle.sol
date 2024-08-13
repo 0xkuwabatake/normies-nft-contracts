@@ -81,79 +81,6 @@ abstract contract TierLifeCycle {
     /// @dev Revert with an error if timestamp is invalid.
     error InvalidTimestamp();
 
-    ///////// MODIFIERS ///////////////////////////////////////////////////////////////////////////O-'
-
-    /// @dev LifeCycleStatus must be Live(3) for `tierId`.
-    modifier isLive(uint256 tierId) {
-        if (lifeCycleStatus(tierId) != LifeCycleStatus.Live) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        _;
-    }
-
-    /// @dev LifeCycleStatus must be NOT Ending(5) /  NOT Finished(6) for `tierId`.
-    /// See: {TierLifeCycle - LifeCycleStatus}.
-    modifier isNotEndingOrNotFinished(uint256 tierId) {
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        _;
-    }
-
-    /// @dev LifeCycleStatus must be ReadyToStart(1) / ReadyToLive(2) for `tierId`.
-    modifier isReadyToStartOrReadyToLive(uint256 tierId) {
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        _;
-    }
-
-    /// @dev LifeCycleStatus must be Paused(4) / Ending(5) for `tierId`.
-    modifier isPausedOrEnding(uint256 tierId) {
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToStart) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToLive) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        _;
-    }
-
-    /// @dev Timestamp must be greater than block.timestamp but less than 1099511627775 (36812 AD).
-    modifier isValidTimestamp(uint256 timestamp) {
-        if (timestamp <= block.timestamp) _revert(InvalidTimestamp.selector);
-        if (timestamp > 0xFFFFFFFFFF) _revert(InvalidTimestamp.selector);
-        _;
-    }
-
-    /// @dev Current timestamp must be greater than 48 hours before the end of first life cycle period.
-    modifier is48hrsBeforeEndOfFirstPeriod(uint256 tierId) {
-        uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
-        // if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 172800)) {
-        if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 120)) {                            // TESTNET !!!
-            _revert(InvalidTimeToInitialize.selector);
-        }
-        _;    
-    }
-
     ///////// PUBLIC GETTER FUNCTIONS /////////////////////////////////////////////////////////////O-'
 
     /// @dev Returns life cycle status for `tierId` in LifeCycleStatus's key value (uint8).
@@ -207,10 +134,8 @@ abstract contract TierLifeCycle {
     ///     had passed pause of life cycle timestamp that had been defined.
     /// ```
     // function _setLifeCycle(uint256 tierId, uint256 numberOfDays) 
-    function _setLifeCycle(uint256 tierId, uint256 numberOfMinutes)                                // TESTNET !!!                      
-        internal
-        isNotEndingOrNotFinished(tierId)
-    { 
+    function _setLifeCycle(uint256 tierId, uint256 numberOfMinutes) internal {                     // TESTNET !!!
+        _requireStatusIsNotEndingOrNotFinished(tierId);
         // if (numberOfDays < 30) _revert(InvalidNumberOfDays.selector);                        
         // uint256 _totalSeconds = numberOfDays * 86400; 
         if (numberOfMinutes < 10) _revert(InvalidNumberOfDays.selector);                           // TESTNET !!!
@@ -260,11 +185,9 @@ abstract contract TierLifeCycle {
     ///     just in case the tx's block.timestamp when calling {_setLifeCycleToLive} had just passed
     ///     the previous start of life cycle that had been defined.
     /// ```
-    function _setStartOfLifeCycle(uint256 tierId, uint256 timestamp)
-        internal
-        isValidTimestamp(timestamp)
-        isReadyToStartOrReadyToLive(tierId)
-    {
+    function _setStartOfLifeCycle(uint256 tierId, uint256 timestamp) internal {
+        _requireStatusIsReadyToStartOrReadyToLive(tierId);
+        _requireValidTimestamp(timestamp);
         // ReadyToStart(1)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToStart) {
             _lifeCycleStatus[tierId] = LifeCycleStatus.ReadyToLive; // ReadyToStart(1) => ReadyToLive(2)
@@ -323,13 +246,13 @@ abstract contract TierLifeCycle {
     /// - If it's still at the first of life cycle period, it only can be initialized start from
     ///   48 hours (172800 seconds) before the end of its first period. 
     /// ```
-    function _pauseLifeCycle(uint256 tierId, uint256 timestamp)
-        internal
-        isLive(tierId)
-        isValidTimestamp(timestamp)
-        is48hrsBeforeEndOfFirstPeriod(tierId)
-    {
-        _lifeCycleStatus[tierId] = LifeCycleStatus.Paused; // Live(3) => Paused(4)
+    function _pauseLifeCycle(uint256 tierId, uint256 timestamp) internal {
+        _requireStatusIsLive(tierId);
+        _require48HrsBeforeEndOfFirstPeriod(tierId);
+        _requireValidTimestamp(timestamp);
+
+        // Live(3) => Paused(4)
+        _lifeCycleStatus[tierId] = LifeCycleStatus.Paused; 
         LibMap.set(_lifeCycle, _add(tierId, 20), uint40(timestamp));
         emit LifeCycleIsPaused(tierId, timestamp);
     }
@@ -371,15 +294,14 @@ abstract contract TierLifeCycle {
     /// - If it's still at the first of life cycle period, it only can be initialized start from
     ///   48 hours (172800 seconds) before the end of its first period.
     /// ```
-    function _setEndOfLifeCycle(uint256 tierId, uint256 timestamp)
-        internal
-        isLive(tierId)
-        isValidTimestamp(timestamp)
-        is48hrsBeforeEndOfFirstPeriod(tierId)
-    {
-        _lifeCycleStatus[tierId] = LifeCycleStatus.Ending; // Live(3) => Ending(5)
-        LibMap.set(_lifeCycle, _add(tierId, 30), uint40(timestamp));
+    function _setEndOfLifeCycle(uint256 tierId, uint256 timestamp) internal {
+        _requireStatusIsLive(tierId);
+        _require48HrsBeforeEndOfFirstPeriod(tierId);
+        _requireValidTimestamp(timestamp);
 
+        // Live(3) => Ending(5)
+        _lifeCycleStatus[tierId] = LifeCycleStatus.Ending; 
+        LibMap.set(_lifeCycle, _add(tierId, 30), uint40(timestamp));
         emit EndOfLifeCycleSet(tierId, timestamp);
     }
 
@@ -394,10 +316,8 @@ abstract contract TierLifeCycle {
     ///   - If at Paused(4): it can be initialized when current time has passed pause of life cycle.
     ///   - If at Ending(5): it can be initialized when current time has passed end of life cycle
     /// ```
-    function _finishLifeCycle(uint256 tierId)
-        internal
-        isPausedOrEnding(tierId)
-    {
+    function _finishLifeCycle(uint256 tierId) internal {
+        _requireStatusIsPausedOrEnding(tierId);
         // Paused(4)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) {
             if (block.timestamp <= pauseOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
@@ -418,6 +338,72 @@ abstract contract TierLifeCycle {
         }
 
         emit LifeCycleIsFinished(tierId, block.timestamp);
+    }
+
+    ///////// INTERNAL LIFE CYCLE STATUS FOR TIER ID VALIDATORS /////////
+
+    /// @dev LifeCycleStatus must be Live(3) for `tierId`.
+    function _requireStatusIsLive(uint256 tierId) internal view {
+        if (lifeCycleStatus(tierId) != LifeCycleStatus.Live) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+    }
+
+    /// @dev LifeCycleStatus must be NOT Ending(5) /  NOT Finished(6) for `tierId`.
+    function _requireStatusIsNotEndingOrNotFinished(uint256 tierId) internal view {
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+    }
+
+    /// @dev LifeCycleStatus must be ReadyToStart(1) / ReadyToLive(2) for `tierId`.
+    function _requireStatusIsReadyToStartOrReadyToLive(uint256 tierId) internal view {
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+    }
+
+    /// @dev LifeCycleStatus must be Paused(4) / Ending(5) for `tierId`.
+    function _requireStatusIsPausedOrEnding(uint256 tierId) internal view {
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToStart) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToLive) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+    }
+
+    /// @dev Timestamp must be greater than block.timestamp but less than 1099511627775 (36812 AD).
+    function _requireValidTimestamp(uint256 timestamp) internal view {
+        if (timestamp <= block.timestamp) _revert(InvalidTimestamp.selector);
+        if (timestamp > 0xFFFFFFFFFF) _revert(InvalidTimestamp.selector);
+    }
+
+    /// @dev Current timestamp must be greater than 48 hours before the end of first life cycle period.
+    function _require48HrsBeforeEndOfFirstPeriod(uint256 tierId) internal view {
+        uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
+        // if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 172800)) {
+        if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 120)) {                            // TESTNET !!!
+            _revert(InvalidTimeToInitialize.selector);
+        }
     }
 
     ///////// INTERNAL HELPER FUNCTIONS /////////
