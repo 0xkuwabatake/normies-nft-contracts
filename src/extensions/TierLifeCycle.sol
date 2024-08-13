@@ -416,6 +416,7 @@ abstract contract TierLifeCycle {
     {
         // Paused(4)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) {
+            if (block.timestamp <= pauseOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
             _lifeCycleStatus[tierId] = LifeCycleStatus.Finished; // Paused(4) => Finished(6)
             // Reset pause of life cycle, start of life cycle and life cycle values back to zero.
             LibMap.set(_lifeCycle, _add(tierId, 20), 0);
