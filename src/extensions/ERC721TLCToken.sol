@@ -81,7 +81,6 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// - If not at three statuses above, it will constantly return 0 (zero).
     /// ```
     function updateTokenFee(uint256 tokenId) public view returns (uint256 result) {
-        if (!_exists(tokenId)) _revert(TokenDoesNotExist.selector);
         uint256 _tierId = tierId(tokenId);
         
         _validateAllReturnZeroUpdateTokenFee(_tierId);
@@ -139,7 +138,6 @@ abstract contract ERC721TLCToken is ERC721TLC {
         view 
         returns (uint256 result) 
     {
-        if (!_exists(tokenId)) _revert(TokenDoesNotExist.selector);
         uint256 _tierId = tierId(tokenId);
 
         // See: {_validateAllReturnZeroConditions}.
@@ -172,7 +170,6 @@ abstract contract ERC721TLCToken is ERC721TLC {
         view
         returns (uint256 result) 
     {
-        if (!_exists(tokenId)) _revert(TokenDoesNotExist.selector);
         uint256 _tierId = tierId(tokenId);
 
         // See: {_validateAllReturnZeroConditions}.
