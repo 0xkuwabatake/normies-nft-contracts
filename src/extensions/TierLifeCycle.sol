@@ -83,25 +83,9 @@ abstract contract TierLifeCycle {
 
     ///////// MODIFIERS ///////////////////////////////////////////////////////////////////////////O-'
 
-    /// @dev LifeCycleStatus must be ReadyToLive(2) for `tierId`.
-    modifier isReadyToLive(uint256 tierId) {
-        if (lifeCycleStatus(tierId) != LifeCycleStatus.ReadyToLive) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        _;
-    }
-
     /// @dev LifeCycleStatus must be Live(3) for `tierId`.
     modifier isLive(uint256 tierId) {
         if (lifeCycleStatus(tierId) != LifeCycleStatus.Live) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        _;
-    }
-
-    /// @dev LifeCycleStatus must be Paused(4) for `tierId`.
-    modifier isPaused(uint256 tierId) {
-        if (lifeCycleStatus(tierId) != LifeCycleStatus.Paused) {
             _revert(InvalidLifeCycleStatus.selector);
         }
         _;
@@ -310,10 +294,10 @@ abstract contract TierLifeCycle {
     ///   cycle. If it had been passed, it can be reinitiated after start of life cycle is being
     ///   reinitialized -- see {_startOfLifeCycle}. 
     /// ```
-    function _setLifeCycleToLive(uint256 tierId)
-        internal
-        isReadyToLive(tierId)
-    {
+    function _setLifeCycleToLive(uint256 tierId) internal {
+        if (lifeCycleStatus(tierId) != LifeCycleStatus.ReadyToLive) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
         if (block.timestamp >= startOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
         _lifeCycleStatus[tierId] = LifeCycleStatus.Live; // ReadyToLive(2) => Live(3)
         emit LifeCycleIsLive(tierId, block.timestamp);
@@ -359,10 +343,10 @@ abstract contract TierLifeCycle {
     /// Requirement:
     /// - LifeCycleStatus must be at Paused(4).
     /// ```
-    function _unpauseLifeCycle(uint256 tierId)
-        internal
-        isPaused(tierId)
-    {
+    function _unpauseLifeCycle(uint256 tierId) internal {
+        if (lifeCycleStatus(tierId) != LifeCycleStatus.Paused) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
         _lifeCycleStatus[tierId] = LifeCycleStatus.Live; // Paused(4) => Live(3)
         LibMap.set(_lifeCycle, _add(tierId, 20), 0);
         emit LifeCycleIsUnpaused(tierId, block.timestamp);
