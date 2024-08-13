@@ -502,6 +502,17 @@ contract ERC721TLCDrop is
         _resetTrustedForwarder();
     }
 
+    ///////// MULTICALL OPERATION /////////
+
+    /// @dev See: {_multicall}
+    function multicall(bytes[] calldata data)
+        external
+        onlyOwnerOrRoles(1)
+        returns (bytes[] memory) 
+    {
+        _multicall(data);
+    }
+
     ///////// PAUSED STATUS OPERATION /////////
 
     /// @dev Sets paused status toggle.
@@ -513,7 +524,7 @@ contract ERC721TLCDrop is
     }
 
     ///////// PUBLIC GETTER FUNCTIONS /////////////////////////////////////////////////////////////O-'
-
+    
     //// @dev Returns true if this contract implements the interface defined by `interfaceId`.
     /// See: https://eips.ethereum.org/EIPS/eip-165
     function supportsInterface(bytes4 interfaceId)
@@ -673,6 +684,56 @@ contract ERC721TLCDrop is
     }
         
     ///////// PRIVATE HELPER FUNCTIONS /////////
+
+    /// @dev `DELEGATECALL` with the current contract to each calldata in `data`.
+    /// Source: https://github.com/Vectorized/solady/blob/main/src/utils/Multicallable.sol#L32
+    function _multicall(bytes[] calldata data) private returns (bytes[] memory) {
+        assembly {
+            mstore(0x00, 0x20)
+            mstore(0x20, data.length) // Store `data.length` into `results`.
+            // Early return if no data.
+            if iszero(data.length) { return(0x00, 0x40) }
+
+            let results := 0x40
+            // `shl` 5 is equivalent to multiplying by 0x20.
+            let end := shl(5, data.length)
+            // Copy the offsets from calldata into memory.
+            calldatacopy(0x40, data.offset, end)
+            // Offset into `results`.
+            let resultsOffset := end
+            // Pointer to the end of `results`.
+            end := add(results, end)
+
+            for {} 1 {} {
+                // The offset of the current bytes in the calldata.
+                let o := add(data.offset, mload(results))
+                let m := add(resultsOffset, 0x40)
+                // Copy the current bytes from calldata to the memory.
+                calldatacopy(
+                    m,
+                    add(o, 0x20), // The offset of the current bytes' bytes.
+                    calldataload(o) // The length of the current bytes.
+                )
+                if iszero(delegatecall(gas(), address(), m, calldataload(o), codesize(), 0x00)) {
+                    // Bubble up the revert if the delegatecall reverts.
+                    returndatacopy(0x00, 0x00, returndatasize())
+                    revert(0x00, returndatasize())
+                }
+                // Append the current `resultsOffset` into `results`.
+                mstore(results, resultsOffset)
+                results := add(results, 0x20)
+                // Append the `returndatasize()`, and the return data.
+                mstore(m, returndatasize())
+                returndatacopy(add(m, 0x20), 0x00, returndatasize())
+                // Advance the `resultsOffset` by `returndatasize() + 0x20`,
+                // rounded up to the next multiple of 32.
+                resultsOffset :=
+                    and(add(add(resultsOffset, returndatasize()), 0x3f), 0xffffffffffffffe0)
+                if iszero(lt(results, end)) { break }
+            }
+            return(0x00, add(resultsOffset, 0x40))
+        }
+    }
 
     /// @dev Force sends all the ETH in the current contract to `to`, with a `gasStipend`.
     /// Source: https://github.com/Vectorized/solady/blob/main/src/utils/SafeTransferLib.sol#L153
