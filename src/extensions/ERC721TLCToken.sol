@@ -231,10 +231,8 @@ abstract contract ERC721TLCToken is ERC721TLC {
     ///////// INTERNAL TOKEN LIFE CYCLE UPDATE FEE SETTER /////////
 
     /// @dev Sets token life cycle update `fee` for `tierId`.
-    function _setUpdateFee(uint256 tierId, uint256 fee)
-        internal
-        isNotEndingOrNotFinished(tierId)
-    {
+    function _setUpdateFee(uint256 tierId, uint256 fee) internal {
+        _requireStatusIsNotEndingOrNotFinished(tierId);
         // When life cycle status is Paused(4):
         // The value is able to be re-initialized starts from 48 hours before 
         // the end of first life cycle period.
