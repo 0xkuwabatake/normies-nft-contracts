@@ -210,24 +210,34 @@ abstract contract TierLifeCycle {
     }
 
     /// @dev Sets life cycle for `tierId`.
+    /// 
+    /// Note:
+    /// Life cycle is length of a life cycle period in total seconds.
+    /// 
+    /// Requirements:
+    /// - `numberOfDays` must be at least equal to or greater than 30 days.
+    /// - LifeCycleStatus must be at: NotLive(0) / ReadyToStart(1) / ReadyToLive(2) / Live(3) / Paused(4).
+    ///   - If at Live(3): `numberOfDays` can be reinitialized start from 48 hours before 
+    ///     the end of first life cycle period.
+    ///   - If at Paused(4): `numberOfDays` can be reinitialized after current tx's timestamp
+    ///     had passed pause of life cycle timestamp that had been defined.
+    /// ```
     // function _setLifeCycle(uint256 tierId, uint256 numberOfDays) 
     function _setLifeCycle(uint256 tierId, uint256 numberOfMinutes)                                // TESTNET !!!                      
         internal
         isNotEndingOrNotFinished(tierId)
     { 
-        // `numberOfDays` must at least equal to or greater than 30 days.
         // if (numberOfDays < 30) _revert(InvalidNumberOfDays.selector);                        
         // uint256 _totalSeconds = numberOfDays * 86400; 
         if (numberOfMinutes < 10) _revert(InvalidNumberOfDays.selector);                           // TESTNET !!!
         uint256 _totalSeconds = numberOfMinutes * 60;                                              // TESTNET !!!
 
-        // The defauult condition is when life cycle status is NotLive(0).
+        // NotLive(0)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) {
             _lifeCycleStatus[tierId] = LifeCycleStatus.ReadyToStart; // NotLive(0) => ReadyToStart(1)
             LibMap.set(_lifeCycle, tierId, uint40(_totalSeconds));
         }
-
-        // When life cycle status is ReadyToStart(1) or ReadyToLive(2).
+        // ReadyToStart(1) or ReadyToLive(2)
         if (
             (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToStart) ||
             (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToLive)
@@ -235,10 +245,7 @@ abstract contract TierLifeCycle {
         {
             LibMap.set(_lifeCycle, tierId, uint40(_totalSeconds));
         }
-
-        // When life cycle status is Live(3):
-        // The value is able to be re-initialized starts from 48 hours before 
-        // the end of first life cycle period.
+        // Live(3)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
             uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
             // if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 172800)) {
@@ -247,10 +254,7 @@ abstract contract TierLifeCycle {
             } 
             LibMap.set(_lifeCycle, tierId, uint40(_totalSeconds));
         }
-
-        // When life cycle status is Paused(4),
-        // The value is able to be re-initialized after current time had passed 
-        // pause of life cycle timestamp that had been defined.
+        // Paused(4)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) {
             if (block.timestamp <= pauseOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
             LibMap.set(_lifeCycle, tierId, uint40(_totalSeconds));
@@ -260,21 +264,29 @@ abstract contract TierLifeCycle {
     }
 
     /// @dev Sets start of life cycle for `tierId`.
+    /// 
+    /// Note:
+    /// Start of life cycle is a mark time of the beginning of life cycle period. Once it had been
+    /// initialized and life cycle status is Live(3), it cannot be reinitialized.
+    /// 
+    /// Requirements:
+    /// - `timestamp` must be greater than block.timestamp and less than 1099511627775.
+    /// - LifeCycleStatus must be at: ReadyToStart(1) / ReadyToLive(2).
+    ///   - `timestamp` is still can be reinitialized when life cycle status is at ReadyToLive(2), 
+    ///     just in case the tx's block.timestamp when calling {_setLifeCycleToLive} had just passed
+    ///     the previous start of life cycle that had been defined.
+    /// ```
     function _setStartOfLifeCycle(uint256 tierId, uint256 timestamp)
         internal
         isValidTimestamp(timestamp)
         isReadyToStartOrReadyToLive(tierId)
     {
-        // The default condition is when life cycle status is ReadyToStart(1).
+        // ReadyToStart(1)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToStart) {
             _lifeCycleStatus[tierId] = LifeCycleStatus.ReadyToLive; // ReadyToStart(1) => ReadyToLive(2)
             LibMap.set(_lifeCycle, _add(tierId, 10), uint40(timestamp));
         }
-
-        // When life cycle status is ReadyToLive(2):
-        // The value is still able to be re-initialized, just in case tx's block.timestamp
-        // when setting the life cycle to Live(3) status had passed the start of life cycle
-        // that had been defined -- see {_setLifeCycleToLive}.
+        // ReadyToLive(2)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToLive) {
             LibMap.set(_lifeCycle, _add(tierId, 10), uint40(timestamp));
         }
@@ -282,7 +294,22 @@ abstract contract TierLifeCycle {
         emit StartOfLifeCycleUpdate(tierId, timestamp);
     }
 
-    /// @dev Sets life cycle status for `tierId` to Live.
+    /// @dev Sets life cycle status for `tierId` to Live(3).
+    /// 
+    /// Note:
+    /// The intention of this method is to change the status from ReadyToLive(2) to Live(3) with
+    /// its defined start of life cycle timestamp as the starting time. 
+    /// - When it goes Live(3), all of minted token statuses under `tierId` 
+    ///   will started to have their own start and end of life cycle token based on
+    ///   its current token timestamp comparing to start of life cycle. 
+    ///   See: {ERC721TLCToken - startOfLifeCycleToken}, {ERC721TLCToken - endOfLifeCycleToken}.
+    /// 
+    /// Requirements:
+    /// - LifeCycleStatus must be at ReadyToLive(2).
+    /// - Tx's block.timestamp when calling this method must not be passed the defined start of life
+    ///   cycle. If it had been passed, it can be reinitiated after start of life cycle is being
+    ///   reinitialized -- see {_startOfLifeCycle}. 
+    /// ```
     function _setLifeCycleToLive(uint256 tierId)
         internal
         isReadyToLive(tierId)
@@ -292,7 +319,26 @@ abstract contract TierLifeCycle {
         emit LifeCycleIsLive(tierId, block.timestamp);
     }
 
-    /// @dev Sets life cycle status for `tier` to Paused.
+    /// @dev Sets life cycle status for `tierId` to Paused(4).
+    /// 
+    /// Note:
+    /// Pause of a life cycle is a mark time for the ongoing life cycle period to stop temporarily.
+    /// - Once it had been initialized, the fee to update token life cycle would be calculated
+    ///   proportionally when the current time is started to have a remainder which less than
+    ///   length of life cycle token. See {ERC721TLCToken - updateTokenFee}.
+    /// - When current time has passed its defined pause of life cycle, all of the token statuses
+    ///   would immediately go back to `Active` as per default -- see {ERC721TLCToken - tokenStatus}.
+    /// - It can be unpaused at anytime after it'd been initialized. When its unpaused, 
+    ///   life cycle status would immediately go back to Live(3) -- see {_unpauseLifeCycle}.
+    /// - After current time had passed its defined pause of life cycle, there's an option to
+    ///   stop the life cycle period permanently -- see {finishLifeCycle}.
+    /// 
+    /// Requirements:
+    /// - LifeCycleStatus must be at Live(3).
+    /// - `timestamp` must be greater than block.timestamp and less than 1099511627775.
+    /// - If it's still at the first of life cycle period, it only can be initialized start from
+    ///   48 hours (172800 seconds) before the end of its first period. 
+    /// ```
     function _pauseLifeCycle(uint256 tierId, uint256 timestamp)
         internal
         isLive(tierId)
@@ -305,6 +351,14 @@ abstract contract TierLifeCycle {
     }
 
     /// @dev Unpause life cycle status for `tierId`.
+    /// 
+    /// Note:
+    /// The intention of this method is to continue the lifecycle period that had been stopped
+    /// temporarily (paused) to go back to Live(3) status.
+    /// 
+    /// Requirement:
+    /// - LifeCycleStatus must be at Paused(4).
+    /// ```
     function _unpauseLifeCycle(uint256 tierId)
         internal
         isPaused(tierId)
@@ -315,6 +369,24 @@ abstract contract TierLifeCycle {
     }
 
     /// @dev Sets end of life cycle for `tierId`.
+    /// 
+    /// Note:
+    /// End of life cycle is a mark time of the ending of life cycle period. 
+    /// - Once it had been initialized, it cannot be cancelled. So use it wisely. 
+    /// - Once it had been initialized, the fee to update token life cycle would be calculated
+    ///   proportionally when the current time is started to have a remainder which less than
+    ///   length of life cycle token. See {ERC721TLCToken - updateTokenFee}.
+    /// - When current time has passed its defined end of life cycle, all of the token statuses
+    ///   would immediately go back to `Active` as per default -- see {ERC721TLCToken - tokenStatus}.
+    /// - When current time has passed its defined end of life cycle, it's strongly recommended to 
+    ///   finish the life cycle period once for all -- see {finishLifeCycle}.
+    /// 
+    /// Requirements:
+    /// - LifeCycleStatus must be at Live(3).
+    /// - `timestamp` must be greater than block.timestamp and less than 1099511627775.
+    /// - If it's still at the first of life cycle period, it only can be initialized start from
+    ///   48 hours (172800 seconds) before the end of its first period.
+    /// ```
     function _setEndOfLifeCycle(uint256 tierId, uint256 timestamp)
         internal
         isLive(tierId)
@@ -328,11 +400,21 @@ abstract contract TierLifeCycle {
     }
 
     /// @dev Finish life cycle for `tierId`.
+    /// 
+    /// Note:
+    /// The intention of this method is to reset all of the values that had been defined back to
+    /// zero and change status from Paused(4) / Ending(5) to Finished(6). 
+    /// 
+    /// Requirements:
+    /// - LifeCycleStatus must be at Paused(4) / Ending (5).
+    ///   - If at Paused(4): it can be initialized when current time has passed pause of life cycle.
+    ///   - If at Ending(5): it can be initialized when current time has passed end of life cycle
+    /// ```
     function _finishLifeCycle(uint256 tierId)
         internal
         isPausedOrEnding(tierId)
     {
-        // When life cycle status is Paused(4).
+        // Paused(4)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) {
             _lifeCycleStatus[tierId] = LifeCycleStatus.Finished; // Paused(4) => Finished(6)
             // Reset pause of life cycle, start of life cycle and life cycle values back to zero.
@@ -340,8 +422,7 @@ abstract contract TierLifeCycle {
             LibMap.set(_lifeCycle, _add(tierId, 10), 0);
             LibMap.set(_lifeCycle, tierId, 0);
         }
-        // When life cycle status is Ending(5),
-        // the reset operation is able to be initialized if current time has passed the end of life cycle.
+        // Ending(5)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
             if (block.timestamp <= endOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
             _lifeCycleStatus[tierId] = LifeCycleStatus.Finished; // Ending(5) => Finished(6)
