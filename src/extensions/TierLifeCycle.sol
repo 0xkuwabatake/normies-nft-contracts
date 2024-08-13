@@ -112,14 +112,6 @@ abstract contract TierLifeCycle {
 
     ///////// INTERNAL LIFE CYCLES FOR A TIER ID SETTERS /////////
 
-    /// @dev Initialized life cycle for `tierId` unchecked.
-    /// Note: It's an unchecked method to be called inside constructor method at child contract.
-    function _initLifeCycleUnchecked(uint256 tierId, uint256 totalSeconds) internal {
-        _lifeCycleStatus[tierId] = LifeCycleStatus.ReadyToStart;
-        LibMap.set(_lifeCycle, tierId, uint40(totalSeconds));
-        emit LifeCycleUpdate(tierId, totalSeconds);
-    }
-
     /// @dev Sets life cycle for `tierId`.
     /// 
     /// Note:
