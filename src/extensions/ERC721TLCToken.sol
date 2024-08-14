@@ -365,6 +365,16 @@ abstract contract ERC721TLCToken is ERC721TLC {
 
     ///////// PRIVATE FUNCTIONS ///////////////////////////////////////////////////////////////////O-'
 
+    /// @dev LifeCycleStatus must NOT Ending(5) or NOT Finished(6) for `tierId`.
+    function _requireStatusIsNotEndingOrNotFinished(uint256 tierId) internal view {
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+    }
+
     ///////// PRIVATE TOKEN LIFE CYCLE UPDATE FEE VALIDATORS /////////
 
     /// @dev Validate `offset` to update token life cycle.
