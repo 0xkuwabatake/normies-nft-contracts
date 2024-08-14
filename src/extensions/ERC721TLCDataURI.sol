@@ -37,15 +37,19 @@ abstract contract ERC721TLCDataURI is ERC721TLCToken {
     ///////// PUBLIC GETTERS FUNCTIONS ////////////////////////////////////////////////////////////O-'
 
     /// @dev Returns the Uniform Resource Identifier (URI) for `tokenId`.
+    /// 
     /// See: {ERC721Metadata - tokenURI}.
+    /// 
+    /// Expiry date trait is only showing up with following conditions:
+    /// - when life cycle status is Live(3) and start of life cycle has started or
+    /// - when life cycle status is Paused(4) and hasn't passed the pause of life cycle timestamp or
+    /// - when life cycle status is Ending(5) and hasn't passed the end of life cycle timestamp.
+    /// ```
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         if (!_exists(tokenId)) _revert(TokenDoesNotExist.selector);
         uint256 _tierId = tierId(tokenId);
 
-        // Expiry date trait is only showing up in NFT metadata,
-        // when life cycle status is Live(3) and start of life cycle has started or
-        // when life cycle status is Paused(4) and hasn't passed the pause of life cycle timestamp or
-        // when life cycle status is Ending(5) and hasn't passed the end of life cycle timestamp.
+        // Live(3) / Paused(4) / Ending(5)
         if (
             (lifeCycleStatus(_tierId) == LifeCycleStatus.Live && block.timestamp >= startOfLifeCycle(_tierId)) ||
             (lifeCycleStatus(_tierId) == LifeCycleStatus.Paused && block.timestamp <= pauseOfLifeCycle(_tierId)) ||
