@@ -120,7 +120,7 @@ abstract contract TierLifeCycle {
     /// Life cycle is length of a life cycle period in total seconds.
     /// 
     /// Requirements:
-    /// - LifeCycleStatus must be at: NotLive(0) / ReadyToStart(1) / ReadyToLive(2) / Live(3) / Paused(4).
+    /// - LifeCycleStatus must be at: NotLive(0) / Live(3) / Paused(4).
     ///   - If Live(3): `numberOfDays` can be reinitialized start from 48 hours before 
     ///     the end of first life cycle period.
     ///   - If Paused(4): `numberOfDays` can be reinitialized after current tx's timestamp
@@ -129,7 +129,7 @@ abstract contract TierLifeCycle {
     /// ```
     // function _setLifeCycle(uint256 tierId, uint256 numberOfDays) 
     function _setLifeCycle(uint256 tierId, uint256 numberOfMinutes) internal {                     // TESTNET !!!
-        _requireStatusIsNotEndingOrNotFinished(tierId);
+        _requireStatusIsNotLiveOrLiveOrPaused(tierId);
         // if (numberOfDays < 30) _revert(InvalidNumberOfDays.selector);                        
         // uint256 _totalSeconds = numberOfDays * 86400; 
         if (numberOfMinutes < 10) _revert(InvalidNumberOfDays.selector);                           // TESTNET !!!
@@ -138,14 +138,6 @@ abstract contract TierLifeCycle {
         // NotLive(0)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) {
             _lifeCycleStatus[tierId] = LifeCycleStatus.ReadyToStart; // NotLive(0) => ReadyToStart(1)
-            LibMap.set(_lifeCycle, tierId, uint40(_totalSeconds));
-        }
-        // ReadyToStart(1) or ReadyToLive(2)
-        if (
-            (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToStart) ||
-            (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToLive)
-           ) 
-        {
             LibMap.set(_lifeCycle, tierId, uint40(_totalSeconds));
         }
         // Live(3)
@@ -341,8 +333,14 @@ abstract contract TierLifeCycle {
         }
     }
 
-    /// @dev LifeCycleStatus must be NOT Ending(5) /  NOT Finished(6) for `tierId`.
-    function _requireStatusIsNotEndingOrNotFinished(uint256 tierId) internal view {
+    /// @dev LifeCycleStatus must be NotLive(0) /  Live(3) / Paused(4)
+    function _requireStatusIsNotLiveOrLiveOrPaused(uint256 tierId) internal view {
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToStart) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToLive) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
             _revert(InvalidLifeCycleStatus.selector);
         }
