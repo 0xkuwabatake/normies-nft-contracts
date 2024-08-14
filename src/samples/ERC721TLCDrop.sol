@@ -111,6 +111,12 @@ contract ERC721TLCDrop is
         _;
     }
 
+    /// @dev Tier ID for claim (free mint) must not be less than 8 or greater than 10.
+    modifier isClaimTier(uint256 tierId) {
+        if (tierId < 8 || tierId > 10) _revert(InvalidTierId.selector);
+        _;
+    }
+
     /// @dev Life cycle value for `tierId` must be non-zero.
     modifier isDefinedLifeCycle(uint256 tierId) {
         if (lifeCycle(tierId) == 0) _revert(UndefinedLifeCycle.selector);
@@ -210,11 +216,11 @@ contract ERC721TLCDrop is
     /// @dev Mints one single token ID from `tierId` by trusted forwarder contract to `signer`.
     function claim(address signer, uint256 tierId) 
         external
+        isClaimTier(tierId)
         isDefinedLifeCycle(tierId)
         onlyTrustedForwarder
         whenNotPaused
     {
-        if (tierId < 8 || tierId > 10) _revert(InvalidTierId.selector);
         _validateNumberMinted(signer, tierId);
         _safeMintTier(signer, tierId);
     }
