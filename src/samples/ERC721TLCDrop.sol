@@ -646,7 +646,7 @@ contract ERC721TLCDrop is
         // Leaf or node is the hashes of (`to`, `tierId`)
         // Ref: https://github.com/OpenZeppelin/merkle-tree?tab=readme-ov-file#leaf-hash
         bytes32 _leaf = keccak256(bytes.concat(keccak256(abi.encode(addr, tierId))));
-        bool _isValid = _verifyCalldata(merkleProof, _merkleRoot[tierId], _leaf);
+        bool _isValid = _verifyMerkleLeaf(merkleProof, _merkleRoot[tierId], _leaf);
         if (!_isValid) _revert(InvalidMerkleProof.selector);
     }
 
@@ -752,7 +752,7 @@ contract ERC721TLCDrop is
 
     /// @dev Returns whether `leaf` exists in the Merkle tree with `root`, given `proof`.
     /// Source: https://github.com/Vectorized/solady/blob/main/src/utils/MerkleProofLib.sol#L46
-    function _verifyCalldata(bytes32[] calldata proof, bytes32 root, bytes32 leaf)
+    function _verifyMerkleLeaf(bytes32[] calldata proof, bytes32 root, bytes32 leaf)
         private
         pure
         returns (bool isValid)
