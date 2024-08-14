@@ -366,7 +366,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     ///////// PRIVATE FUNCTIONS ///////////////////////////////////////////////////////////////////O-'
 
     /// @dev LifeCycleStatus must NOT Ending(5) or NOT Finished(6) for `tierId`.
-    function _requireStatusIsNotEndingOrNotFinished(uint256 tierId) internal view {
+    function _requireStatusIsNotEndingOrNotFinished(uint256 tierId) private view {
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
             _revert(InvalidLifeCycleStatus.selector);
         }
