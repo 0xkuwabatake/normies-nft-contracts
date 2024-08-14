@@ -268,7 +268,7 @@ contract ERC721TLCDrop is
         external
         onlyOwner
     {
-        _forceSafeTransferAllETH(withdrawalAddress, 210000);
+        TLCLib.forceSafeTransferAllETH(withdrawalAddress, 210000);
     }
 
     /// @dev See: {_setWithdrawalAddress}.
@@ -653,7 +653,7 @@ contract ERC721TLCDrop is
         // Leaf or node is the hashes of (`to`, `tierId`)
         // Ref: https://github.com/OpenZeppelin/merkle-tree?tab=readme-ov-file#leaf-hash
         bytes32 _leaf = keccak256(bytes.concat(keccak256(abi.encode(addr, tierId))));
-        bool _isValid = _verifyMerkleLeaf(merkleProof, _merkleRoot[tierId], _leaf);
+        bool _isValid = TLCLib.verifyMerkleLeaf(merkleProof, _merkleRoot[tierId], _leaf);
         if (!_isValid) _revert(InvalidMerkleProof.selector);
     }
 
@@ -742,54 +742,6 @@ contract ERC721TLCDrop is
                 if iszero(lt(results, end)) { break }
             }
             return(0x00, add(resultsOffset, 0x40))
-        }
-    }
-
-    /// @dev Force sends all the ETH in the current contract to `to`, with a `gasStipend`.
-    /// Source: https://github.com/Vectorized/solady/blob/main/src/utils/SafeTransferLib.sol#L153
-    function _forceSafeTransferAllETH(address to, uint256 gasStipend) private {
-        /// @solidity memory-safe-assembly
-        assembly {
-            if iszero(call(gasStipend, to, selfbalance(), codesize(), 0x00, codesize(), 0x00)) {
-                mstore(0x00, to) // Store the address in scratch space.
-                mstore8(0x0b, 0x73) // Opcode `PUSH20`.
-                mstore8(0x20, 0xff) // Opcode `SELFDESTRUCT`.
-                // For gas estimation.
-                if iszero(create(selfbalance(), 0x0b, 0x16)) { revert(codesize(), codesize()) } 
-            }
-        }
-    }
-
-    /// @dev Returns whether `leaf` exists in the Merkle tree with `root`, given `proof`.
-    /// Source: https://github.com/Vectorized/solady/blob/main/src/utils/MerkleProofLib.sol#L46
-    function _verifyMerkleLeaf(bytes32[] calldata proof, bytes32 root, bytes32 leaf)
-        private
-        pure
-        returns (bool isValid)
-    {
-        /// @solidity memory-safe-assembly
-        assembly {
-            if proof.length {
-                // Left shift by 5 is equivalent to multiplying by 0x20.
-                let end := add(proof.offset, shl(5, proof.length))
-                // Initialize `offset` to the offset of `proof` in the calldata.
-                let offset := proof.offset
-                // Iterate over proof elements to compute root hash.
-                for {} 1 {} {
-                    // Slot of `leaf` in scratch space.
-                    // If the condition is true: 0x20, otherwise: 0x00.
-                    let scratch := shl(5, gt(leaf, calldataload(offset)))
-                    // Store elements to hash contiguously in scratch space.
-                    // Scratch space is 64 bytes (0x00 - 0x3f) and both elements are 32 bytes.
-                    mstore(scratch, leaf)
-                    mstore(xor(scratch, 0x20), calldataload(offset))
-                    // Reuse `leaf` to store the hash to reduce stack operations.
-                    leaf := keccak256(0x00, 0x40)
-                    offset := add(offset, 0x20)
-                    if iszero(lt(offset, end)) { break }
-                }
-            }
-            isValid := eq(leaf, root)
         }
     }
 }
