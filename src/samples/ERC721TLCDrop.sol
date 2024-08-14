@@ -38,6 +38,7 @@ contract ERC721TLCDrop is
     /// Note:
     /// - Index       0 is allocated for paused status toggle.
     /// - Index  1 - 10 are allocated for mint activity status toggle from tier ID #1 - #10 (max).
+    /// ```
     LibBitmap.Bitmap private _status;
 
     /// @dev Withdrawal address.
@@ -664,16 +665,19 @@ contract ERC721TLCDrop is
     }
 
     /// @dev Mint fee from `tierId` for the owner of tierId #1 and/or tierId #2 validator.
+    /// 
+    /// Conditions:
+    /// - Mint fee for `tierId` must be non-zero value.
+    /// - For the owner of tier #1 and #2, {mintFeeForTierOneOwner}.
+    /// - For the owner of tier #1 only, {mintFeeForTierOneOwner}.
+    /// - For the owner of tier #2 only, {mintFeeForTierTwoOwner}.
+    ///```
     function _validateMintFeeForGenesisOwner(address owner, uint256 tierId) private {
-        // Mint fee for `tierId` must be non-zero value.
         if (mintFee(tierId) != 0) {
-            // For the owner of tier #1 and #2
             if (isTierOwned(owner, 1) && isTierOwned(owner, 2)) {
                 _validateMsgValue(mintFeeForTierOneOwner(tierId));
-            // For the owner of tier #1 only
             } else if (isTierOwned(owner, 1)) {
                 _validateMsgValue(mintFeeForTierOneOwner(tierId));
-            // For the owner of tier #2 only
             } else if (isTierOwned(owner, 2)) {
                 _validateMsgValue(mintFeeForTierTwoOwner(tierId));
             } else {
