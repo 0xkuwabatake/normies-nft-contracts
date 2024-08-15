@@ -354,6 +354,9 @@ abstract contract TierLifeCycle {
         if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) {
             _revert(InvalidLifeCycleStatus.selector);
         }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) {
             _revert(InvalidLifeCycleStatus.selector);
         }
@@ -377,6 +380,9 @@ abstract contract TierLifeCycle {
             _revert(InvalidLifeCycleStatus.selector);
         }
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) {
             _revert(InvalidLifeCycleStatus.selector);
         }
     }
