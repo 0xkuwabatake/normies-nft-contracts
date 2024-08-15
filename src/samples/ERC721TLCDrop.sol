@@ -33,11 +33,11 @@ contract ERC721TLCDrop is
     /// @dev Mapping from `tierId` => merkle root.
     mapping(uint256 => bytes32) private _merkleRoot;
 
-    /// @dev Mapping from `index` => `paused` or mint activite status.
+    /// @dev Mapping from `index` => `paused` or mint activity status.
     ///
     /// Note:
     /// - Index       0 is allocated for paused status toggle.
-    /// - Index  1 - 10 are allocated for mint activity status toggle from tier ID #1 - #10 (max).
+    /// - Index  1 - 10 are allocated for mint activity status toggle from tier ID #1 - #10.
     /// ```
     LibBitmap.Bitmap private _status;
 
@@ -93,7 +93,7 @@ contract ERC721TLCDrop is
 
     ///////// MODIFIERS ///////////////////////////////////////////////////////////////////////////O-'
 
-    /// @dev Tier ID must not be 0 (zero) or greater than 10 (ten).
+    /// @dev Tier ID must not be 0 (zero) and greater than 10 (ten).
     modifier isValidTier(uint256 tierId) {
         if (tierId == 0) _revert(InvalidTierId.selector);
         if (tierId > 10) _revert(InvalidTierId.selector);
@@ -119,6 +119,7 @@ contract ERC721TLCDrop is
     }
 
     /// @dev Life cycle value for `tierId` must be non-zero.
+    /// See: {TierLifeCycle - _setLifeCycle}, {ERC721TLC - _setMintExtraData}.
     modifier isDefinedLifeCycle(uint256 tierId) {
         if (lifeCycle(tierId) == 0) _revert(UndefinedLifeCycle.selector);
         _;
@@ -169,7 +170,7 @@ contract ERC721TLCDrop is
 
     ///////// EXTERNAL MINT FUNCTIONS /////////
 
-    /// @dev Mints one single token ID from `tierId` and `merkleProof`.
+    /// @dev Mints one single token ID from `tierId` given `merkleProof`.
     function whitelistMint(uint256 tierId, bytes32[] calldata merkleProof) 
         external
         payable
@@ -241,7 +242,7 @@ contract ERC721TLCDrop is
     }
 
     /// @dev Mints one single token ID from `tierId` to `recipients
-    /// Note: Maximum total recipients is 20.
+    /// Note: Maximum total recipients is 20 (twenty).
     function airdrop(address[] calldata recipients, uint256 tierId)
         external
         isValidTier(tierId)
@@ -263,7 +264,7 @@ contract ERC721TLCDrop is
     ///////// WITHDRAWAL FUNCTIONS /////////
 
     /// @dev Withdraw all of the ether balance from contract to `withdrawalAddress`.
-    /// See: {_forceSafeTransferAllETH}.
+    /// See: {TLCLib - forceSafeTransferAllETH}.
     function withdraw()
         external
         onlyOwner
@@ -511,6 +512,7 @@ contract ERC721TLCDrop is
 
     ///////// MULTICALL OPERATION /////////
 
+    /// @dev Receives and executes a batch of function calls on this contract.
     /// @dev See: {_multicall}
     function multicall(bytes[] calldata data)
         external
@@ -644,7 +646,7 @@ contract ERC721TLCDrop is
     }
 
     /// @dev Merkle proof validator.
-    /// See: {_verifyCallData}.
+    /// See: {TLCLib - verifyMerkleLeaf}.
     function _validateMerkleProof(
         address addr,
         uint256 tierId,

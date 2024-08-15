@@ -4,6 +4,7 @@ pragma solidity ^0.8.4;
 import "solady/tokens/ERC721.sol";
 import "./extensions/TierLifeCycle.sol";
 
+/// @notice Simple but highly customized ERC721 contract extension to create a tier-based NFT with life cycle collection.
 /// @author 0xkuwabatake(@0xkuwabatake)
 abstract contract ERC721TLC is ERC721, TierLifeCycle {
 
@@ -98,7 +99,7 @@ abstract contract ERC721TLC is ERC721, TierLifeCycle {
     ///////// INTERNAL ERC721T SAFE MINT LOGIC FUNCTION /////////
 
     /// @dev Safe mints single quantity of token ID to `to` and set to `tier`.
-    /// Note: `tier` MUST NOT be zero and it MUST be validated at child contract.
+    /// Note: `tier` must not be zero and it must be validated at child contract.
     /// See: {_setMintExtraData}, {ERC721 - _safeMint}.
     function _safeMintTier(address to, uint256 tier) internal {
         uint256 _tokenId = _nextTokenId();
@@ -114,7 +115,7 @@ abstract contract ERC721TLC is ERC721, TierLifeCycle {
     ///////// INTERNAL ERC721T MINT EXTRA DATA SETTER //////////
 
     /// @dev Sets mint extra data for `tokenId` to `tier`, `block.timestamp` and life cycle `tier`.
-    /// See: {TierLifeCycle - _lifeCycle}, {ERC721 - _setExtraData}.
+    /// See: {TierLifeCycle - lifeCycle}, {ERC721 - _setExtraData}.
     function _setMintExtraData(uint256 tokenId, uint256 tier) internal {
         uint96 _packed = uint96(tier) |                         // 2 bytes - Tier ID                      
         uint96(block.timestamp) << 16 |                         // 5 bytes - block.timestamp

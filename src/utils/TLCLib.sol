@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
+/// @notice Collection of single and non-dependable function library for tier-based NFT drop with life cycle.
 /// @author 0xkuwabatake(@0xkuwabatake)
+/// @author Modified from Solady (https://github.com/vectorized/solady/blob/main/src/utils/SafeTransferLib.sol)
+/// @author Modified from Solady (https://github.com/vectorized/solady/blob/main/src/utils/MerkleProofLib.sol)
+/// @author Modified from Solady (https://github.com/vectorized/solady/blob/main/src/utils/Base64.sol)
+/// @author Solady (https://github.com/vectorized/solady/blob/main/src/utils/DateTimeLib.sol)
+/// @author Modified from Chiru Labs (https://github.com/chiru-labs/ERC721A/blob/main/contracts/ERC721A.sol)
 library TLCLib {
 
     /// @dev Force sends all the ETH in the current contract to `to`, with a `gasStipend`.

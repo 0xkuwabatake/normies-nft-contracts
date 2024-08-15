@@ -4,6 +4,7 @@ pragma solidity ^0.8.4;
 import "./ERC721TLCToken.sol";
 import "../utils/TLCLib.sol";
 
+/// @notice A customized ERC721TLC contract extension to manage NFT metadata based on its latest life cycle state.
 /// @author 0xkuwabatake (@0xkuwabatake)
 abstract contract ERC721TLCDataURI is ERC721TLCToken {
     using TLCLib for *;
@@ -40,12 +41,14 @@ abstract contract ERC721TLCDataURI is ERC721TLCToken {
 
     /// @dev Returns the Uniform Resource Identifier (URI) for `tokenId`.
     /// 
-    /// See: {ERC721Metadata - tokenURI}.
+    /// Note:
+    /// The value returns dynamically based on `tokenId`'s status and its `_tierId`'s life cycle status.
+    /// - Expiry date's trait is only showing up with following conditions:
+    ///   - when life cycle status is Live(3) and start of life cycle has started or
+    ///   - when life cycle status is Paused(4) and hasn't passed the pause of life cycle timestamp or
+    ///   - when life cycle status is Ending(5) and hasn't passed the end of life cycle timestamp.
     /// 
-    /// Expiry date trait is only showing up with following conditions:
-    /// - when life cycle status is Live(3) and start of life cycle has started or
-    /// - when life cycle status is Paused(4) and hasn't passed the pause of life cycle timestamp or
-    /// - when life cycle status is Ending(5) and hasn't passed the end of life cycle timestamp.
+    /// See: {ERC721Metadata - tokenURI}, {TierLifeCycle - LifeCycleStatus}, {ERC721TLCToken - tokenStatus}.
     /// ```
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         if (!_exists(tokenId)) _revert(TokenDoesNotExist.selector);
@@ -95,7 +98,7 @@ abstract contract ERC721TLCDataURI is ERC721TLCToken {
         _tierDataURI[tierId] = DataURI(name, description, tierName, images, animationURLs);
         emit TierDataURIUpdate(tierId, name, description, tierName, images, animationURLs);
 
-        // When total supply of tokens is not zero, {_emitMetadataUpdate}
+        // When total supply of tokens is not zero, {_emitMetadataUpdate}.
         if (totalSupply() != 0) {
             _emitMetadataUpdate(_startTokenId(), totalSupply());
         }
