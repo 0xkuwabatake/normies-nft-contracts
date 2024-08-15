@@ -217,11 +217,23 @@ abstract contract ERC721TLCToken is ERC721TLC {
             (lifeCycleStatus(_tierId) == LifeCycleStatus.Ending && block.timestamp <= endOfLifeCycle(_tierId))
            )
         {
-            if (tokenTimestamp(tokenId) > startOfLifeCycle(_tierId)) {
-                return _add(tokenTimestamp(tokenId), lifeCycleToken(tokenId));
-            } else {
-                return _add(startOfLifeCycle(_tierId), lifeCycleToken(tokenId));
-            }
+            result = endOfLifeCycleTokenUnchecked(tokenId);
+        }
+    }
+
+    /// @dev Returns unchecked end of life cycle token for `tokenId`.
+    /// 
+    /// Note:
+    /// - The intention of this method is to be queried by offchain indexer to get the real
+    ///   (non-overriden to zero value) value of end of life cycle `tokenId`.
+    /// ```
+    function endOfLifeCycleTokenUnchecked(uint256 tokenId) public view returns (uint256) {
+        uint256 _tierId = tierId(tokenId);
+
+        if (tokenTimestamp(tokenId) > startOfLifeCycle(_tierId)) {
+            return _add(tokenTimestamp(tokenId), lifeCycleToken(tokenId));
+        } else {
+            return _add(startOfLifeCycle(_tierId), lifeCycleToken(tokenId));
         }
     }
 
