@@ -93,15 +93,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
         if (lifeCycleStatus(_tierId) == LifeCycleStatus.Paused) {
             if (block.timestamp <= pauseOfLifeCycle(_tierId)) {
                 uint256 _remainder = _sub(pauseOfLifeCycle(_tierId), block.timestamp);
-                if (_remainder >= lifeCycle(_tierId)) {
-                    return updateFee(_tierId);
-                } 
-                if (_remainder < lifeCycle(_tierId)) {
-                    return _calculateProportionalUpdateFee(_tierId, pauseOfLifeCycle(_tierId));
-                } 
-                if (_remainder == 0) {
-                    return 0;
-                }
+                _validateRemainderForUpdateTokenFee(_tierId, _remainder, pauseOfLifeCycle(_tierId));
             } else {
                 return 0;
             }
@@ -110,15 +102,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
         if (lifeCycleStatus(_tierId) == LifeCycleStatus.Ending) {
             if (block.timestamp <= endOfLifeCycle(_tierId)) {
                 uint256 _remainder = _sub(endOfLifeCycle(_tierId), block.timestamp);
-                if (_remainder >= lifeCycle(_tierId)) {
-                    return updateFee(_tierId);
-                } 
-                if (_remainder < lifeCycle(_tierId)) {
-                    return _calculateProportionalUpdateFee(_tierId, endOfLifeCycle(_tierId));
-                } 
-                if (_remainder == 0) {
-                    return 0;
-                }
+                _validateRemainderForUpdateTokenFee(_tierId, _remainder, endOfLifeCycle(_tierId));
             } else {
                 return 0;
             }
@@ -477,6 +461,24 @@ abstract contract ERC721TLCToken is ERC721TLC {
             return 0;
         }
         if (lifeCycleStatus(tierId) != LifeCycleStatus.Ending) {
+            return 0;
+        }
+    }
+
+    /// @dev `remainder` for {UpdateTokenFee} from `tierId` and `offset` validator.
+    /// See: {UpdateTokenFee}.
+    function _validateRemainderForUpdateTokenFee(uint256 tierId, uint256 offset, uint256 remainder)
+        private
+        view
+        returns (uint256 result)
+    {
+        if (remainder >= lifeCycle(tierId)) {
+            return updateFee(tierId);
+        } 
+        if (remainder < lifeCycle(tierId)) {
+            return _calculateProportionalUpdateFee(tierId, offset);
+        } 
+        if (remainder == 0) {
             return 0;
         }
     }
