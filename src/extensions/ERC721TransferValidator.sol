@@ -40,13 +40,13 @@ abstract contract ERC721TransferValidator is ICreatorToken {
     
     /// @dev Sets `validator` as transfer validator.
     function _setTransferValidator(address validator) internal {
-        _transferValidator = validator;
         emit TransferValidatorUpdated(_transferValidator, validator);
+        _transferValidator = validator;
     }
 
     /// @dev Reset transfer validator back to zero address (default).
     function _resetTransferValidator() internal {
-        _transferValidator = address(0);
         emit TransferValidatorUpdated(_transferValidator, address(0));
+        _transferValidator = address(0);
     }
 }
