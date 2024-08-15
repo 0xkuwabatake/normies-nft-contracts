@@ -150,7 +150,7 @@ abstract contract TierLifeCycle {
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
             uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
             // if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 172800)) {
-            if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 120)) {                        // TESTNET !!!
+            if (block.timestamp < _sub(_endOfFirstLifeCyclePeriod, 120)) {                        // TESTNET !!!
                 _revert(InvalidTimeToInitialize.selector);
             } 
             LibMap.set(_lifeCycle, tierId, uint40(_totalSeconds));
@@ -212,7 +212,7 @@ abstract contract TierLifeCycle {
     /// ```
     function _setLifeCycleToLive(uint256 tierId) internal {
         if (lifeCycleStatus(tierId) != LifeCycleStatus.ReadyToLive) _revert(InvalidLifeCycleStatus.selector);
-        if (block.timestamp >= startOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
+        if (block.timestamp > startOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
         _lifeCycleStatus[tierId] = LifeCycleStatus.Live; // ReadyToLive(2) => Live(3)
         emit LifeCycleIsLive(tierId, block.timestamp);
     }
@@ -428,7 +428,7 @@ abstract contract TierLifeCycle {
     function _require48HrsBeforeEndOfFirstPeriod(uint256 tierId) private view {
         uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
         // if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 172800)) {
-        if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 120)) {                            // TESTNET !!!
+        if (block.timestamp < _sub(_endOfFirstLifeCyclePeriod, 120)) {                            // TESTNET !!!
             _revert(InvalidTimeToInitialize.selector);
         }
     }
