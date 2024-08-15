@@ -449,9 +449,9 @@ contract ERC721TLCDrop is
         isValidTier(tierId)
         onlyRolesOrOwner(2)
     {
-        _finishLifeCycle(tierId);
         // Reset token life cycle update fee for `tierId` to 0.
         _setUpdateFee(tierId, 0);
+        _finishLifeCycle(tierId);
         _emitMetadataUpdate(_startTokenId(), totalSupply());
     }
 
