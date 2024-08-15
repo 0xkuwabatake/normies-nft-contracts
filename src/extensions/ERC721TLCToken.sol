@@ -82,8 +82,6 @@ abstract contract ERC721TLCToken is ERC721TLC {
     ///   on its value.
     /// - If current life cycle status is not at three statuses above, 
     ///   it will constantly return 0 (zero) -- see {_validateAllReturnZeroUpdateTokenFee}.
-    /// 
-    /// See: {_validateAllReturnZeroUpdateTokenFee}, {_validateRemainderForTokenUpdateFee}.
     /// ```
     function updateTokenFee(uint256 tokenId) public view returns (uint256 result) {
         uint256 _tierId = tierId(tokenId);
@@ -97,7 +95,15 @@ abstract contract ERC721TLCToken is ERC721TLC {
         if (lifeCycleStatus(_tierId) == LifeCycleStatus.Paused) {
             if (block.timestamp <= pauseOfLifeCycle(_tierId)) {
                 uint256 _remainder = _sub(pauseOfLifeCycle(_tierId), block.timestamp);
-                _validateRemainderForUpdateTokenFee(_tierId, _remainder, pauseOfLifeCycle(_tierId));
+                if (_remainder >= lifeCycle(_tierId)) {
+                    return updateFee(_tierId);
+                } 
+                if (_remainder < lifeCycle(_tierId)) {
+                    return _calculateProportionalUpdateFee(_tierId, pauseOfLifeCycle(_tierId));
+                } 
+                if (_remainder == 0) {
+                    return 0;
+                }
             } else {
                 return 0;
             }
@@ -106,7 +112,15 @@ abstract contract ERC721TLCToken is ERC721TLC {
         if (lifeCycleStatus(_tierId) == LifeCycleStatus.Ending) {
             if (block.timestamp <= endOfLifeCycle(_tierId)) {
                 uint256 _remainder = _sub(endOfLifeCycle(_tierId), block.timestamp);
-                _validateRemainderForUpdateTokenFee(_tierId, _remainder, endOfLifeCycle(_tierId));
+                if (_remainder >= lifeCycle(_tierId)) {
+                    return updateFee(_tierId);
+                } 
+                if (_remainder < lifeCycle(_tierId)) {
+                    return _calculateProportionalUpdateFee(_tierId, endOfLifeCycle(_tierId));
+                } 
+                if (_remainder == 0) {
+                    return 0;
+                }
             } else {
                 return 0;
             }
@@ -466,23 +480,6 @@ abstract contract ERC721TLCToken is ERC721TLC {
             return 0;
         }
         if (lifeCycleStatus(tierId) != LifeCycleStatus.Ending) {
-            return 0;
-        }
-    }
-
-    /// @dev `remainder` for {UpdateTokenFee} from `tierId` and `offset` validator.
-    function _validateRemainderForUpdateTokenFee(uint256 tierId, uint256 offset, uint256 remainder)
-        private
-        view
-        returns (uint256 result)
-    {
-        if (remainder >= lifeCycle(tierId)) {
-            return updateFee(tierId);
-        } 
-        if (remainder < lifeCycle(tierId)) {
-            return _calculateProportionalUpdateFee(tierId, offset);
-        } 
-        if (remainder == 0) {
             return 0;
         }
     }
