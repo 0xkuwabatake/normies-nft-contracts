@@ -139,11 +139,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     ///   - If token timestamp `tokenId` is less than or equal to start of life cycle `_tierId`,
     ///     then start of life cycle `tokenId` is start of life cycle `_tierId`.
     /// ```
-    function startOfLifeCycleToken(uint256 tokenId)
-        public
-        view 
-        returns (uint256 result) 
-    {
+    function startOfLifeCycleToken(uint256 tokenId) public view returns (uint256 result) {
         uint256 _tierId = tierId(tokenId);
         _validateAllReturnZeroConditions(tokenId);
 
@@ -186,11 +182,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     ///     then end of life cycle `tokenId` is the addition start of life cycle `_tierId`
     ///     and life cycle token `tokenId`.
     /// ``` 
-    function endOfLifeCycleToken(uint256 tokenId)
-        public
-        view
-        returns (uint256 result) 
-    {
+    function endOfLifeCycleToken(uint256 tokenId) public view returns (uint256 result) {
         uint256 _tierId = tierId(tokenId);
         _validateAllReturnZeroConditions(tokenId);
 
