@@ -331,84 +331,6 @@ abstract contract TierLifeCycle {
         emit LifeCycleIsFinished(tierId, block.timestamp);
     }
 
-    ///////// INTERNAL LIFE CYCLE STATUS FOR TIER ID VALIDATORS /////////
-
-    /// @dev LifeCycleStatus must be at Live(3) for `tierId`.
-    function _requireStatusIsLive(uint256 tierId) internal view {
-        if (lifeCycleStatus(tierId) != LifeCycleStatus.Live) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-    }
-
-    /// @dev LifeCycleStatus must be at NotLive(0) /  Live(3) / Paused(4)
-    function _requireStatusIsNotLiveOrLiveOrPaused(uint256 tierId) internal view {
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToStart) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToLive) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-    }
-
-    /// @dev LifeCycleStatus must be at ReadyToStart(1) / ReadyToLive(2) for `tierId`.
-    function _requireStatusIsReadyToStartOrReadyToLive(uint256 tierId) internal view {
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-    }
-
-    /// @dev LifeCycleStatus must be at Paused(4) / Ending(5) for `tierId`.
-    function _requireStatusIsPausedOrEnding(uint256 tierId) internal view {
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToStart) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToLive) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-    }
-
-    /// @dev Timestamp must be greater than block.timestamp but less than 1099511627775 (36812 AD).
-    function _requireValidTimestamp(uint256 timestamp) internal view {
-        if (timestamp <= block.timestamp) _revert(InvalidTimestamp.selector);
-        if (timestamp > 0xFFFFFFFFFF) _revert(InvalidTimestamp.selector);
-    }
-
-    /// @dev Current time must have passed 48 hours before the end of first life cycle period.
-    function _require48HrsBeforeEndOfFirstPeriod(uint256 tierId) internal view {
-        uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
-        // if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 172800)) {
-        if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 120)) {                            // TESTNET !!!
-            _revert(InvalidTimeToInitialize.selector);
-        }
-    }
-
     ///////// INTERNAL HELPER FUNCTIONS /////////
 
     /// @dev Unchecked arithmetic for adding two numbers.
@@ -430,6 +352,84 @@ abstract contract TierLifeCycle {
         assembly {
             mstore(0x00, errorSelector)
             revert(0x00, 0x04)
+        }
+    }
+
+    ///////// PRIVATE LIFE CYCLE STATUS FOR TIER ID VALIDATORS /////////
+
+    /// @dev LifeCycleStatus must be at Live(3) for `tierId`.
+    function _requireStatusIsLive(uint256 tierId) private view {
+        if (lifeCycleStatus(tierId) != LifeCycleStatus.Live) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+    }
+
+    /// @dev LifeCycleStatus must be at NotLive(0) /  Live(3) / Paused(4)
+    function _requireStatusIsNotLiveOrLiveOrPaused(uint256 tierId) private view {
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToStart) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToLive) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+    }
+
+    /// @dev LifeCycleStatus must be at ReadyToStart(1) / ReadyToLive(2) for `tierId`.
+    function _requireStatusIsReadyToStartOrReadyToLive(uint256 tierId) private view {
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+    }
+
+    /// @dev LifeCycleStatus must be at Paused(4) / Ending(5) for `tierId`.
+    function _requireStatusIsPausedOrEnding(uint256 tierId) private view {
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToStart) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToLive) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+    }
+
+    /// @dev Timestamp must be greater than block.timestamp but less than 1099511627775 (36812 AD).
+    function _requireValidTimestamp(uint256 timestamp) private view {
+        if (timestamp <= block.timestamp) _revert(InvalidTimestamp.selector);
+        if (timestamp > 0xFFFFFFFFFF) _revert(InvalidTimestamp.selector);
+    }
+
+    /// @dev Current time must have passed 48 hours before the end of first life cycle period.
+    function _require48HrsBeforeEndOfFirstPeriod(uint256 tierId) private view {
+        uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
+        // if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 172800)) {
+        if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 120)) {                            // TESTNET !!!
+            _revert(InvalidTimeToInitialize.selector);
         }
     }
 }
