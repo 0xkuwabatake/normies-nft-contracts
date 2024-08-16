@@ -313,19 +313,17 @@ abstract contract TierLifeCycle {
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) {
             if (block.timestamp <= pauseOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
             _lifeCycleStatus[tierId] = LifeCycleStatus.Finished; // Paused(4) => Finished(6)
-            // Reset pause of life cycle, start of life cycle and life cycle values back to zero.
+            // Reset pause of life cycle, start of life cycle back to zero
             LibMap.set(_lifeCycle, _add(tierId, 20), 0);
             LibMap.set(_lifeCycle, _add(tierId, 10), 0);
-            LibMap.set(_lifeCycle, tierId, 0);
         }
         // Ending(5)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
             if (block.timestamp <= endOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
             _lifeCycleStatus[tierId] = LifeCycleStatus.Finished; // Ending(5) => Finished(6)
-            // Reset end of life cycle, start of life cycle and life cycle values back to zero.
+            // Reset end of life cycle, start of life cycle back to zero.
             LibMap.set(_lifeCycle, _add(tierId, 30), 0);
             LibMap.set(_lifeCycle, _add(tierId, 10), 0);
-            LibMap.set(_lifeCycle, tierId, 0);
         }
 
         emit LifeCycleIsFinished(tierId, block.timestamp);
