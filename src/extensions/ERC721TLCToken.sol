@@ -159,7 +159,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// ```
     function startOfLifeCycleToken(uint256 tokenId) public view returns (uint256 result) {
         uint256 _tierId = tierId(tokenId);
-        _validateAllReturnZeroConditions(tokenId);
+        _validateAllReturnZeroStartOrEndLifeCycleToken(tokenId);
 
         // Live(3) / Paused(4) / Ending(5)
         if (
@@ -203,7 +203,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// ``` 
     function endOfLifeCycleToken(uint256 tokenId) public view returns (uint256 result) {
         uint256 _tierId = tierId(tokenId);
-        _validateAllReturnZeroConditions(tokenId);
+        _validateAllReturnZeroStartOrEndLifeCycleToken(tokenId);
 
         // Live(3) / Paused(4) / Ending(5)
         if (
@@ -485,7 +485,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     }
 
     /// @dev All conditions which start and end of life cycle `tokenId` return 0 (zero).
-    function _validateAllReturnZeroConditions(uint256 tokenId)
+    function _validateAllReturnZeroStartOrEndLifeCycleToken(uint256 tokenId)
         private
         view
         returns (uint256 result)
