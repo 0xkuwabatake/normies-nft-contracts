@@ -76,7 +76,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// 
     /// Note:
     /// - If Live(3): returns full update fee -- see {updateFee}.
-    /// - If Paused(4) / Ending(5): current time must be less than or equal to 
+    /// - If Paused(4) / Ending(5): current time (block.timestamp) must be less than or equal to 
     ///   defined pause or end of life cycle timestamp (offset).
     ///   The `_remainder` is offset minus block.timestamp and its results will vary depending
     ///   on its value.
@@ -142,8 +142,8 @@ abstract contract ERC721TLCToken is ERC721TLC {
     ///
     /// Conditions:
     /// - It will return 0 (zero), if current life cycle `_tierId`'s status from `tokenId` and
-    ///   current time (block.timestamp) comparing to each defined start / pause / end of life cyle 
-    ///   timestamp as described at {_validateAllReturnZeroConditions}.
+    ///   current time (block.timestamp) comparing to defined start / pause / end of life cyle 
+    ///   timestamp as described at {_validateAllReturnZeroStartOrEndLifeCycleToken}.
     ///
     /// - It will return non-zero value, if current life cycle `tierId`'s status is:
     ///   - at Live(3) and current time is equal to or greater than start of life cycle `_tierId` or
@@ -184,8 +184,8 @@ abstract contract ERC721TLCToken is ERC721TLC {
     ///
     /// Conditions:
     /// - It will return 0 (zero), if current life cycle `_tierId`'s status from `tokenId` and
-    ///   current time (block.timestamp) comparing to each defined start / pause / end of life cyle 
-    ///   timestamp as described at {_validateAllReturnZeroConditions}.
+    ///   current time (block.timestamp) comparing to defined start / pause / end of life cyle 
+    ///   timestamp as described at {_validateAllReturnZeroStartOrEndLifeCycleToken}.
     ///
     /// - It will return non-zero value, if current life cycle `_tierId`'s status is:
     ///   - at Live(3) and current time is equal to or greater than start of life cycle `_tierId` or
@@ -221,7 +221,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// Note:
     /// - The intention of this method is to be queried by offchain indexer to get the stored
     ///   value of end of life cycle `tokenId` especially when the {endOfLifeCycleToken}'s value
-    ///   is overriden to zero value because of {_validateAllReturnZeroConditions}.
+    ///   is overriden to zero value because of {_validateAllReturnZeroStartOrEndLifeCycleToken}.
     /// ```
     function endOfLifeCycleTokenUnchecked(uint256 tokenId) public view returns (uint256) {
         uint256 _tierId = tierId(tokenId);
@@ -277,15 +277,15 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// Update fee is a mandatory non-gas fee that must must be paid in ether either in full or 
     /// proportionally by token owners when updating their token life cycle 
     /// at the end of life cycle for their owned tokenId.
-    /// - It must be initialized first before {TierLifeCycle - setStartOfLifeCycle} and it must
-    ///   be well-validated at child contract.
+    /// - It is mandatory to be initialized prior to {TierLifeCycle - setStartOfLifeCycle},
+    ///   this condition must be well-validated at child contract.
     /// 
     /// Requirements:
     /// - Life cycle status must be at NotLive(0) / ReadyToStart(1) / ReadyToLive(2) / Live (3) /
     ///   Paused(4) / Ending (5).
-    /// - If Paused(4): it can be initialized when tx's block.timestamp is greater than defined
+    /// - If Paused(4): it only can be initialized when tx's block.timestamp is greater than defined
     ///   pause of life cycle timestamp.
-    /// - If Ending(5): it can be initialized when tx's block.timestamp is greater than define
+    /// - If Ending(5): it only can be initialized when tx's block.timestamp is greater than defined
     ///   end of life cycle timestamp.
     /// ```
     function _setUpdateFee(uint256 tierId, uint256 fee) internal {
@@ -324,11 +324,13 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// 
     /// Requirements:
     /// - LifeCycleStatus must be at Live(3) / Paused(4) / Ending(5).
-    /// - If Live(3): it can be initialized 2 hours before end of life cycle token `tokenId`.
-    /// - If Paused(4) / Ending(5): the current time must be validated with end of life cycle
-    ///   `tokenId` and `offset` -- see {_validateOffset}, before comparing current time with
-    ///   `offset` to calculate remainder as the basis of total fee that needed to be paid --
-    ///   see {_validateRemainder}.  
+    /// - If Live(3): it can be initialized 2 hours (7200 seconds) before 
+    ///   end of life cycle token `tokenId` -- the condition is defined as constant to prevent
+    ///   contract owner update its token life cycle too soon but it's still fair enough for them.
+    /// - If Paused(4) / Ending(5): beside of condition above, the current time must be validated 
+    ///   with end of life cycle `tokenId` and `offset` -- see {_validateOffset}, 
+    ///   before comparing current time with`offset` to get the remainder as the basis of total fee 
+    ///   that needed to be paid -- see {_validateRemainder}.  
     /// ```
     function _validateUpdateFee(uint256 tokenId) internal {
         uint256 _tierId = tierId(tokenId);
@@ -360,9 +362,9 @@ abstract contract ERC721TLCToken is ERC721TLC {
     ///
     /// Conditions:
     /// - If both of start and end of life cycle `tokenId` are zero value, return 0.
-    /// - If both of start and end of life cycle `tokenId` are non-zero value,
-    ///   and current block.timestamp is greater than end of life cycle `tokenId`, return 1. 
-    ///   If not, return 0.
+    /// - If both of start and end of life cycle `tokenId` are non-zero value and
+    ///   current time (block.timestamp) is greater than end of life cycle `tokenId`, return 1 --
+    ///   if not, return 0.
     ///```
     function _tokenStatus(uint256 tokenId) internal view returns (uint256 result) {
         if (startOfLifeCycleToken(tokenId) == 0) {
@@ -401,8 +403,9 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// - `offset` is the defined end of life cycle timestamp when life cycle status is Ending(5).
     ///
     /// Requirement:
-    /// - The operation can be initiated start 2 hours before end of life cycle token `tokenId` and
-    ///   until 1 minute before current block.timestamp has reached the `offset`.
+    /// - The operation can be initiated start 2 hours (7200 seconds) before 
+    ///   end of life cycle token `tokenId` and until 1 minute (60 seconds) before 
+    ///   current time (block.timestamp) has reached the `offset`.
     /// ```
     function _validateOffset(uint256 tokenId, uint256 offset) private view {
         // if (block.timestamp < _sub(endOfLifeCycleToken(tokenId), 7200)) {      
@@ -464,7 +467,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
 
     ///////// PRIVATE START AND END OF LIFE CYCLE TOKEN ID VALIDATOR /////////
 
-    /// @dev All life cycle statuses which token life cycle update fee for `tierId` are return 0 (zero).
+    /// @dev All life cycle statuses which token life cycle update fee for `tierId` returns 0 (zero).
     function _validateAllReturnZeroUpdateTokenFee(uint256 tierId)
         private
         view
@@ -484,7 +487,14 @@ abstract contract ERC721TLCToken is ERC721TLC {
         }
     }
 
-    /// @dev All conditions which start and end of life cycle `tokenId` return 0 (zero).
+    /// @dev All life cycle statuses and conditions which start or end of life cycle `tokenId` returns 0 (zero).
+    ///
+    /// - It will return zero value, if current life cycle `_tierId`'s status is:
+    ///   - at NotLive(0) / ReadyToStart(1) / ReadyToLive(2) / Finished(6) or
+    ///   - at Live(3) and current time is less than start of life cycle `_tierId` or
+    ///   - at Paused(4) and current time is greater than pause of life cycle `_tierId` or
+    ///   - at Ending(5) and current time is greater than end of life cycle `_tierId`.
+    ///```
     function _validateAllReturnZeroStartOrEndLifeCycleToken(uint256 tokenId)
         private
         view
