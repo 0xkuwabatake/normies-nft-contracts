@@ -29,6 +29,20 @@ library TLCLib {
         return uint128(x);
     }
 
+    /// @dev Unchecked arithmetic for adding two numbers.
+    function add(uint256 a, uint256 b) internal pure returns (uint256 c) {
+        unchecked {
+            c = a + b;
+        }
+    }
+
+    /// @dev Unchecked arithmetic for subtracting two numbers.
+    function sub(uint256 a, uint256 b) internal pure returns (uint256 c) {
+        unchecked {
+            c = a - b;
+        }
+    }
+
     /// @dev Force sends all the ETH in the current contract to `to`, with a `gasStipend`.
     /// Source: https://github.com/Vectorized/solady/blob/main/src/utils/SafeTransferLib.sol#L153
     function forceSafeTransferAllETH(address to, uint256 gasStipend) internal {
