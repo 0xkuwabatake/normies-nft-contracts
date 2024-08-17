@@ -289,7 +289,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     ///   end of life cycle timestamp.
     /// ```
     function _setUpdateFee(uint256 tierId, uint256 fee) internal {
-        _requireStatusIsNotFinished(tierId);
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) _revert(InvalidLifeCycleStatus.selector);
         // Paused(4)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) {
             if (block.timestamp <= pauseOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
@@ -384,15 +384,6 @@ abstract contract ERC721TLCToken is ERC721TLC {
     }
 
     ///////// PRIVATE FUNCTIONS ///////////////////////////////////////////////////////////////////O-'
-
-    ///////// PRIVATE TOKEN LIFE CYCLE UPDATE FEE SETTER /////////
-
-    /// @dev LifeCycleStatus must be at NOT Finished(6) for `tierId`.
-    function _requireStatusIsNotFinished(uint256 tierId) private view {
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-    }
 
     ///////// PRIVATE TOKEN LIFE CYCLE UPDATE FEE VALIDATORS /////////
 
