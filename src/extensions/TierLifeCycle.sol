@@ -2,13 +2,11 @@
 pragma solidity ^0.8.4;
 
 import "solady/utils/LibMap.sol";
-import "../utils/TLCLib.sol";
 
 /// @notice A contract logic for tier-based life cycle status management.
 /// @author 0xkuwabatake(@0xkuwabatake)
 abstract contract TierLifeCycle {
     using LibMap for uint256;
-    using TLCLib for *;
 
     ///////// ENUM ////////////////////////////////////////////////////////////////////////////////O-'
 
@@ -100,17 +98,17 @@ abstract contract TierLifeCycle {
 
     /// @dev Returns start of life cycle for `tierId` at timestamp as seconds since unix epoch.
     function startOfLifeCycle(uint256 tierId) public view returns (uint256) {
-        return uint256(LibMap.get(_lifeCycle, TLCLib.add(tierId, 10)));
+        return uint256(LibMap.get(_lifeCycle, _add(tierId, 10)));
     }
 
     /// @dev Returns life cycle for `tierId` is paused at timestamp as seconds since unix epoch.
     function pauseOfLifeCycle(uint256 tierId) public view returns (uint256) {
-        return uint256(LibMap.get(_lifeCycle, TLCLib.add(tierId, 20)));
+        return uint256(LibMap.get(_lifeCycle, _add(tierId, 20)));
     }
 
     /// @dev Returns end of life cycle for `tierId` at timestamp as seconds since unix epoch.
     function endOfLifeCycle(uint256 tierId) public view returns (uint256) {
-        return uint256(LibMap.get(_lifeCycle, TLCLib.add(tierId, 30)));
+        return uint256(LibMap.get(_lifeCycle, _add(tierId, 30)));
     }
 
     ///////// INTERNAL FUNCTIONS //////////////////////////////////////////////////////////////////O-'
@@ -140,9 +138,9 @@ abstract contract TierLifeCycle {
     function _setLifeCycle(uint256 tierId, uint256 numberOfMinutes) internal {                     // TESTNET !!!
         _requireStatusIsNotLiveOrLiveOrPaused(tierId);
 
-        // if (numberOfDays < 30) revert InvalidNumberOfDays());                        
+        // if (numberOfDays < 30) _revert(InvalidNumberOfDays.selector);                        
         // uint256 _totalSeconds = numberOfDays * 86400; 
-        if (numberOfMinutes < 10) revert InvalidNumberOfDays();                                    // TESTNET !!!
+        if (numberOfMinutes < 10) _revert(InvalidNumberOfDays.selector);                           // TESTNET !!!
         uint256 _totalSeconds = numberOfMinutes * 60;                                              // TESTNET !!!
 
         // NotLive(0)
@@ -152,16 +150,16 @@ abstract contract TierLifeCycle {
         }
         // Live(3)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
-            uint256 _endOfFirstLifeCyclePeriod = TLCLib.add(startOfLifeCycle(tierId), lifeCycle(tierId));
-            // if (block.timestamp <= TLCLib.sub(_endOfFirstLifeCyclePeriod, 172800)) {
-            if (block.timestamp < TLCLib.sub(_endOfFirstLifeCyclePeriod, 120)) {                   // TESTNET !!!
-                revert InvalidTimeToInitialize();
+            uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
+            // if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 172800)) {
+            if (block.timestamp < _sub(_endOfFirstLifeCyclePeriod, 120)) {                        // TESTNET !!!
+                _revert(InvalidTimeToInitialize.selector);
             } 
             LibMap.set(_lifeCycle, tierId, uint40(_totalSeconds));
         }
         // Paused(4)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) {
-            if (block.timestamp <= pauseOfLifeCycle(tierId)) revert InvalidTimeToInitialize();
+            if (block.timestamp <= pauseOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
             LibMap.set(_lifeCycle, tierId, uint40(_totalSeconds));
         }
 
@@ -189,11 +187,11 @@ abstract contract TierLifeCycle {
         // ReadyToStart(1)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToStart) {
             _lifeCycleStatus[tierId] = LifeCycleStatus.ReadyToLive; // ReadyToStart(1) => ReadyToLive(2)
-            LibMap.set(_lifeCycle, TLCLib.add(tierId, 10), uint40(timestamp));
+            LibMap.set(_lifeCycle, _add(tierId, 10), uint40(timestamp));
         }
         // ReadyToLive(2)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToLive) {
-            LibMap.set(_lifeCycle, TLCLib.add(tierId, 10), uint40(timestamp));
+            LibMap.set(_lifeCycle, _add(tierId, 10), uint40(timestamp));
         }
         
         emit StartOfLifeCycleUpdate(tierId, timestamp);
@@ -217,8 +215,8 @@ abstract contract TierLifeCycle {
     ///   after start of life cycle is being reinitialized -- see {_setStartOfLifeCycle}. 
     /// ```
     function _setLifeCycleToLive(uint256 tierId) internal {
-        if (lifeCycleStatus(tierId) != LifeCycleStatus.ReadyToLive) revert InvalidLifeCycleStatus();
-        if (block.timestamp > startOfLifeCycle(tierId)) revert InvalidTimeToInitialize();
+        if (lifeCycleStatus(tierId) != LifeCycleStatus.ReadyToLive) _revert(InvalidLifeCycleStatus.selector);
+        if (block.timestamp > startOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
         _lifeCycleStatus[tierId] = LifeCycleStatus.Live; // ReadyToLive(2) => Live(3)
         emit LifeCycleIsLive(tierId, block.timestamp);
     }
@@ -249,7 +247,7 @@ abstract contract TierLifeCycle {
         _requireValidTimestamp(timestamp);
 
         _lifeCycleStatus[tierId] = LifeCycleStatus.Paused; // Live(3) => Paused(4)
-        LibMap.set(_lifeCycle, TLCLib.add(tierId, 20), uint40(timestamp));
+        LibMap.set(_lifeCycle, _add(tierId, 20), uint40(timestamp));
         emit LifeCycleIsPaused(tierId, timestamp);
     }
 
@@ -265,9 +263,9 @@ abstract contract TierLifeCycle {
     /// - LifeCycleStatus must be at Paused(4).
     /// ```
     function _unpauseLifeCycle(uint256 tierId) internal {
-        if (lifeCycleStatus(tierId) != LifeCycleStatus.Paused) revert InvalidLifeCycleStatus();
+        if (lifeCycleStatus(tierId) != LifeCycleStatus.Paused) _revert(InvalidLifeCycleStatus.selector);
         _lifeCycleStatus[tierId] = LifeCycleStatus.Live; // Paused(4) => Live(3)
-        LibMap.set(_lifeCycle, TLCLib.add(tierId, 20), 0);
+        LibMap.set(_lifeCycle, _add(tierId, 20), 0);
         emit LifeCycleIsUnpaused(tierId, block.timestamp);
     }
 
@@ -298,7 +296,7 @@ abstract contract TierLifeCycle {
         _requireValidTimestamp(timestamp);
 
         _lifeCycleStatus[tierId] = LifeCycleStatus.Ending; // Live(3) => Ending(5)
-        LibMap.set(_lifeCycle, TLCLib.add(tierId, 30), uint40(timestamp));
+        LibMap.set(_lifeCycle, _add(tierId, 30), uint40(timestamp));
         emit EndOfLifeCycleSet(tierId, timestamp);
     }
 
@@ -320,71 +318,124 @@ abstract contract TierLifeCycle {
         _requireStatusIsPausedOrEnding(tierId);
         // Paused(4)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) {
-            if (block.timestamp <= pauseOfLifeCycle(tierId)) revert InvalidTimeToInitialize();
+            if (block.timestamp <= pauseOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
             _lifeCycleStatus[tierId] = LifeCycleStatus.Finished; // Paused(4) => Finished(6)
             // Reset pause of life cycle and start of life cycle back to zero.
-            LibMap.set(_lifeCycle, TLCLib.add(tierId, 20), 0);
-            LibMap.set(_lifeCycle, TLCLib.add(tierId, 10), 0);
+            LibMap.set(_lifeCycle, _add(tierId, 20), 0);
+            LibMap.set(_lifeCycle, _add(tierId, 10), 0);
         }
         // Ending(5)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
-            if (block.timestamp <= endOfLifeCycle(tierId)) revert InvalidTimeToInitialize();
+            if (block.timestamp <= endOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
             _lifeCycleStatus[tierId] = LifeCycleStatus.Finished; // Ending(5) => Finished(6)
             // Reset end of life cycle and start of life cycle back to zero.
-            LibMap.set(_lifeCycle, TLCLib.add(tierId, 30), 0);
-            LibMap.set(_lifeCycle, TLCLib.add(tierId, 10), 0);
+            LibMap.set(_lifeCycle, _add(tierId, 30), 0);
+            LibMap.set(_lifeCycle, _add(tierId, 10), 0);
         }
 
         emit LifeCycleIsFinished(tierId, block.timestamp);
+    }
+
+    ///////// INTERNAL HELPER FUNCTIONS /////////
+
+    /// @dev Unchecked arithmetic for adding two numbers.
+    function _add(uint256 a, uint256 b) internal pure returns (uint256 c) {
+        unchecked {
+            c = a + b;
+        }
+    }
+
+    /// @dev Unchecked arithmetic for subtracting two numbers.
+    function _sub(uint256 a, uint256 b) internal pure returns (uint256 c) {
+        unchecked {
+            c = a - b;
+        }
+    }
+
+    /// @dev Helper function for more efficient reverts.
+    function _revert(bytes4 errorSelector) internal pure {
+        assembly {
+            mstore(0x00, errorSelector)
+            revert(0x00, 0x04)
+        }
     }
 
     ///////// PRIVATE LIFE CYCLE STATUS FOR TIER ID VALIDATORS /////////
 
     /// @dev LifeCycleStatus must be at Live(3) for `tierId`.
     function _requireStatusIsLive(uint256 tierId) private view {
-        if (lifeCycleStatus(tierId) != LifeCycleStatus.Live) revert InvalidLifeCycleStatus();
+        if (lifeCycleStatus(tierId) != LifeCycleStatus.Live) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
     }
 
     /// @dev LifeCycleStatus must be at NotLive(0) /  Live(3) / Paused(4)
     function _requireStatusIsNotLiveOrLiveOrPaused(uint256 tierId) private view {
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToStart) revert InvalidLifeCycleStatus();
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToLive) revert InvalidLifeCycleStatus();
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) revert InvalidLifeCycleStatus();
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) revert InvalidLifeCycleStatus();
-        
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToStart) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToLive) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
     }
 
     /// @dev LifeCycleStatus must be at ReadyToStart(1) / ReadyToLive(2) for `tierId`.
     function _requireStatusIsReadyToStartOrReadyToLive(uint256 tierId) private view {
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) revert InvalidLifeCycleStatus();
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) revert InvalidLifeCycleStatus();
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) revert InvalidLifeCycleStatus();
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) revert InvalidLifeCycleStatus();
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) revert InvalidLifeCycleStatus();
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
     }
 
     /// @dev LifeCycleStatus must be at Paused(4) / Ending(5) for `tierId`.
     function _requireStatusIsPausedOrEnding(uint256 tierId) private view {
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) revert InvalidLifeCycleStatus();
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToStart) revert InvalidLifeCycleStatus();
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToLive) revert InvalidLifeCycleStatus();
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) revert InvalidLifeCycleStatus();
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) revert InvalidLifeCycleStatus();
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToStart) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToLive) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
     }
 
     /// @dev Timestamp must be greater than block.timestamp but less than 1099511627775 (36812 AD).
     function _requireValidTimestamp(uint256 timestamp) private view {
-        if (timestamp <= block.timestamp) revert InvalidTimestamp();
-        if (timestamp > 0xFFFFFFFFFF) revert InvalidTimestamp();
+        if (timestamp <= block.timestamp) _revert(InvalidTimestamp.selector);
+        if (timestamp > 0xFFFFFFFFFF) _revert(InvalidTimestamp.selector);
     }
 
     /// @dev Current time must have passed 48 hours before the end of first life cycle period.
     /// Note: first of life cycle period is start of life cycle timestamp plus life cycle in total seconds.
     function _require48HrsBeforeEndOfFirstPeriod(uint256 tierId) private view {
-        uint256 _endOfFirstLifeCyclePeriod = TLCLib.add(startOfLifeCycle(tierId), lifeCycle(tierId));
-        // if (block.timestamp <= TLCLib.sub(_endOfFirstLifeCyclePeriod, 172800)) {
-        if (block.timestamp < TLCLib.sub(_endOfFirstLifeCyclePeriod, 120)) {                       // TESTNET !!!
-            revert InvalidTimeToInitialize();
+        uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
+        // if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 172800)) {
+        if (block.timestamp < _sub(_endOfFirstLifeCyclePeriod, 120)) {                            // TESTNET !!!
+            _revert(InvalidTimeToInitialize.selector);
         }
     }
 }

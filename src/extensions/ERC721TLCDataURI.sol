@@ -2,10 +2,12 @@
 pragma solidity ^0.8.4;
 
 import "./ERC721TLCToken.sol";
+import "../utils/TLCLib.sol";
 
 /// @notice A customized ERC721TLC contract extension to manage NFT metadata based on its latest life cycle state.
 /// @author 0xkuwabatake (@0xkuwabatake)
 abstract contract ERC721TLCDataURI is ERC721TLCToken {
+    using TLCLib for *;
 
     ///////// STRUCT //////////////////////////////////////////////////////////////////////////////O-'
 
@@ -49,7 +51,7 @@ abstract contract ERC721TLCDataURI is ERC721TLCToken {
     /// See: {ERC721Metadata - tokenURI}, {TierLifeCycle - LifeCycleStatus}, {ERC721TLCToken - tokenStatus}.
     /// ```
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-        if (!_exists(tokenId)) revert TokenDoesNotExist();
+        if (!_exists(tokenId)) _revert(TokenDoesNotExist.selector);
         uint256 _tierId = tierId(tokenId);
 
         // Live(3) / Paused(4) / Ending(5)

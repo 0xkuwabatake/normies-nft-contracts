@@ -95,52 +95,52 @@ contract ERC721TLCDrop is
 
     /// @dev Tier ID must not be 0 (zero) and greater than 10 (ten).
     modifier isValidTier(uint256 tierId) {
-        if (tierId == 0) revert InvalidTierId();
-        if (tierId > 10) revert InvalidTierId();
+        if (tierId == 0) _revert(InvalidTierId.selector);
+        if (tierId > 10) _revert(InvalidTierId.selector);
         _;
     }
 
     /// @dev Tier ID for whitelist mint must not be less than 1 or greater than 2.
     modifier isWhitelistMintTier(uint256 tierId) {
-        if (tierId < 1 || tierId > 2) revert InvalidTierId();
+        if (tierId < 1 || tierId > 2) _revert(InvalidTierId.selector);
         _;
     }
 
     /// @dev Tier ID for public mint must not be less than 3 or greater than 8.
     modifier isPublicMintTier(uint256 tierId) {
-        if (tierId < 3 || tierId > 7) revert InvalidTierId();
+        if (tierId < 3 || tierId > 7) _revert(InvalidTierId.selector);
         _;
     }
 
     /// @dev Tier ID for claim (free mint) must not be less than 8 or greater than 10.
     modifier isClaimTier(uint256 tierId) {
-        if (tierId < 8 || tierId > 10) revert InvalidTierId();
+        if (tierId < 8 || tierId > 10) _revert(InvalidTierId.selector);
         _;
     }
 
     /// @dev Life cycle value for `tierId` must be non-zero.
     /// See: {TierLifeCycle - _setLifeCycle}, {ERC721TLC - _setMintExtraData}.
     modifier isDefinedLifeCycle(uint256 tierId) {
-        if (lifeCycle(tierId) == 0) revert UndefinedLifeCycle();
+        if (lifeCycle(tierId) == 0) _revert(UndefinedLifeCycle.selector);
         _;
     }
 
     /// @dev Only mint status for `tierId` is active.
     modifier onlyMintActive(uint256 tierId) {
-        if (!isMintActive(tierId)) revert MintIsNotActive();
+        if (!isMintActive(tierId)) _revert(MintIsNotActive.selector);
         _;
     }
 
     /// @dev Only the owner of `tokenId`.
     /// See: {ERC721 - ownerOf}.
     modifier onlyTokenOwner(uint256 tokenId) {
-        if (msg.sender != ownerOf(tokenId)) revert InvalidOwner();
+        if (msg.sender != ownerOf(tokenId)) _revert(InvalidOwner.selector);
         _;
     }
 
     /// @dev When it is not at paused status.
     modifier whenNotPaused() {
-        if (isItPaused()) revert Paused();
+        if (isItPaused()) _revert(Paused.selector);
         _;
     }
 
@@ -250,7 +250,7 @@ contract ERC721TLCDrop is
         onlyOwnerOrRoles(1)
         whenNotPaused
     {
-        if (recipients.length > 20) revert ExceedsMaxRecipients();
+        if (recipients.length > 20) _revert(ExceedsMaxRecipients.selector);
         uint256 i;
         unchecked {
             do {
@@ -322,10 +322,10 @@ contract ERC721TLCDrop is
         external
         onlyRolesOrOwner(1)
     {
-        if (tierId < 1 || tierId > 7) revert InvalidTierId();
+        if (tierId < 1 || tierId > 7) _revert(InvalidTierId.selector);
         // See: {ERC721TLCToken - _fee}.
         // _fee index = `tierId` + 10
-        LibMap.set(_fee, TLCLib.add(tierId, 10), uint128(fee));
+        LibMap.set(_fee, _add(tierId, 10), uint128(fee));
         emit MintFeeUpdate(tierId, fee);
     }
 
@@ -338,7 +338,7 @@ contract ERC721TLCDrop is
         uint256 _discountedFee = _calculateDiscountedMintFee(tierToMint, totalDiscount);
         // See: {ERC721TLCToken - _fee}.
         // _fee index = `tierToMint` + 15
-        LibMap.set(_fee, TLCLib.add(tierToMint, 15), uint128(_discountedFee));
+        LibMap.set(_fee, _add(tierToMint, 15), uint128(_discountedFee));
         emit MintFeeForGenesisOwnerUpdate(1, tierToMint, _discountedFee);
     }
  
@@ -351,7 +351,7 @@ contract ERC721TLCDrop is
         uint256 _discountedFee = _calculateDiscountedMintFee(tierToMint, totalDiscount);
         // See: {ERC721TLCToken - _fee}.
         // _fee index = `tierToMint` + 20
-        LibMap.set(_fee, TLCLib.add(tierToMint, 20), uint128(_discountedFee));
+        LibMap.set(_fee, _add(tierToMint, 20), uint128(_discountedFee));
         emit MintFeeForGenesisOwnerUpdate(2, tierToMint, _discountedFee);
     }
 
@@ -400,7 +400,7 @@ contract ERC721TLCDrop is
         isValidTier(tierId)
         onlyRolesOrOwner(2)
     {
-        if (updateFee(tierId) == 0) revert UndefinedFee();
+        if (updateFee(tierId) == 0) _revert(UndefinedFee.selector);
         _setStartOfLifeCycle(tierId, timestamp);
     }
 
@@ -556,17 +556,17 @@ contract ERC721TLCDrop is
 
     /// @dev Returns mint fee for `tierId`.
     function mintFee(uint256 tierId) public view returns (uint256) {
-        return uint256(LibMap.get(_fee, TLCLib.add(tierId, 10))); 
+        return uint256(LibMap.get(_fee, _add(tierId, 10))); 
     }
 
     /// @dev Returns discounted mint fee for `tierId` for the owner of `tierId` #1.
     function mintFeeForTierOneOwner(uint256 tierId) public view returns (uint256) {
-        return uint256(LibMap.get(_fee, TLCLib.add(tierId, 15))); 
+        return uint256(LibMap.get(_fee, _add(tierId, 15))); 
     }
 
     /// @dev Returns discounted mint fee for `tierId` for the owner of `tierId` #2.
     function mintFeeForTierTwoOwner(uint256 tierId) public view returns (uint256) {
-        return uint256(LibMap.get(_fee, TLCLib.add(tierId, 20)));
+        return uint256(LibMap.get(_fee, _add(tierId, 20)));
     }
 
     /// @dev Returns number minted per `tierId` for `addr`.
@@ -625,11 +625,11 @@ contract ERC721TLCDrop is
         view 
         returns (uint256 result)
     {
-        if (mintFee(tierId) == 0) revert UndefinedFee();
+        if (mintFee(tierId) == 0) _revert(UndefinedFee.selector);
         // Max basis points (BPS) is 10000
-        if (totalDiscount > 10000) revert ExceedsMaxBPS();
+        if (totalDiscount > 10000) _revert(ExceedsMaxBPS.selector);
         uint256 _discount = (mintFee(tierId) * totalDiscount) / 10000;
-        result = TLCLib.sub(mintFee(tierId), _discount);
+        result = _sub(mintFee(tierId), _discount);
     }
 
     ///////// PRIVATE MINT VALIDATOR LOGICS //////////
@@ -637,7 +637,9 @@ contract ERC721TLCDrop is
     /// @dev Number minted from `addr` for `tierId` validator.
     /// Note: Maximum number minted is 1 (one).
     function _validateNumberMinted(address addr, uint256 tierId) private {
-        if (_numberMinted[addr][tierId] == 1) revert ExceedsMaxNumberMinted();
+        if (_numberMinted[addr][tierId] == 1) {
+            _revert(ExceedsMaxNumberMinted.selector);
+        }
         unchecked { 
             ++_numberMinted[addr][tierId]; 
         }
@@ -654,7 +656,7 @@ contract ERC721TLCDrop is
         // Ref: https://github.com/OpenZeppelin/merkle-tree?tab=readme-ov-file#leaf-hash
         bytes32 _leaf = keccak256(bytes.concat(keccak256(abi.encode(addr, tierId))));
         bool _isValid = TLCLib.verifyMerkleLeaf(merkleProof, _merkleRoot[tierId], _leaf);
-        if (!_isValid) revert InvalidMerkleProof();
+        if (!_isValid) _revert(InvalidMerkleProof.selector);
     }
 
     /// @dev Mint fee for `tierId` validator.
@@ -681,16 +683,16 @@ contract ERC721TLCDrop is
             } else if (isTierOwned(owner, 2)) {
                 _validateMsgValue(mintFeeForTierTwoOwner(tierId));
             } else {
-                revert InvalidOwner();
+                _revert(InvalidOwner.selector);
             }
         } else {
-            revert UndefinedFee();
+            _revert(UndefinedFee.selector);
         }       
     }
 
     /// @dev msg.value compare to `fee` validator.
     function _validateMsgValue(uint256 fee) private {
-        if (msg.value < fee) revert InsufficientBalance();
+        if (msg.value < fee) _revert(InsufficientBalance.selector);
     }
         
     ///////// PRIVATE HELPER FUNCTIONS /////////
