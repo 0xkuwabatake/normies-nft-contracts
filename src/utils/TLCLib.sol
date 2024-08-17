@@ -3,12 +3,31 @@ pragma solidity ^0.8.4;
 
 /// @notice Collection of single and non-dependable function library for tier-based NFT drop with life cycle.
 /// @author 0xkuwabatake(@0xkuwabatake)
+/// @author Modified from Solady (https://github.com/vectorized/solady/blob/main/src/utils/SafeCastLib.sol)
 /// @author Modified from Solady (https://github.com/vectorized/solady/blob/main/src/utils/SafeTransferLib.sol)
 /// @author Modified from Solady (https://github.com/vectorized/solady/blob/main/src/utils/MerkleProofLib.sol)
 /// @author Modified from Solady (https://github.com/vectorized/solady/blob/main/src/utils/Base64.sol)
 /// @author Solady (https://github.com/vectorized/solady/blob/main/src/utils/DateTimeLib.sol)
 /// @author Modified from Chiru Labs (https://github.com/chiru-labs/ERC721A/blob/main/contracts/ERC721A.sol)
 library TLCLib {
+
+    ///////// CUSTOM ERROR ////////////////////////////////////////////////////////////////////////O-'
+
+    error Overflow();
+
+    ///////// INTERNAL HELPERS ////////////////////////////////////////////////////////////////////O-'
+
+    /// @dev Safe cast from uint256 to uint40.
+    function toUint40(uint256 x) internal pure returns (uint40) {
+        if (x >= 1 << 40) _revertOverflow();
+        return uint40(x);
+    }
+
+    /// @dev Safe cast from uint256 to uint128.
+    function toUint128(uint256 x) internal pure returns (uint128) {
+        if (x >= 1 << 128) _revertOverflow();
+        return uint128(x);
+    }
 
     /// @dev Force sends all the ETH in the current contract to `to`, with a `gasStipend`.
     /// Source: https://github.com/Vectorized/solady/blob/main/src/utils/SafeTransferLib.sol#L153
@@ -191,6 +210,18 @@ library TLCLib {
             day := add(sub(doy, shr(11, add(mul(mp, 62719), 769))), 1)
             month := byte(mp, shl(160, 0x030405060708090a0b0c0102))
             year := add(add(yoe, mul(div(epochDay, 146097), 400)), lt(month, 3))
+        }
+    }
+
+    ///////// PRIVATE HELPER ////////////////////////////////////////////////////////////////////O-'
+
+    function _revertOverflow() private pure {
+        /// @solidity memory-safe-assembly
+        assembly {
+            // Store the function selector of `Overflow()`.
+            mstore(0x00, 0x35278d12)
+            // Revert with (offset, size).
+            revert(0x1c, 0x04)
         }
     }
 }
