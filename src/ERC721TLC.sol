@@ -91,7 +91,7 @@ abstract contract ERC721TLC is ERC721, TierLifeCycle {
 
     /// @dev Returns the total number of tokens in existence.
     function totalSupply() public view returns (uint256) {
-        return _sub(_currentIndex, _startTokenId());
+        return TLCLib.sub(_currentIndex, _startTokenId());
     }
 
     ///////// INTERNAL FUNCTIONS //////////////////////////////////////////////////////////////////O-'

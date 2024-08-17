@@ -94,7 +94,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
         // Paused(4)
         if (lifeCycleStatus(_tierId) == LifeCycleStatus.Paused) {
             if (block.timestamp <= pauseOfLifeCycle(_tierId)) {
-                uint256 _remainder = _sub(pauseOfLifeCycle(_tierId), block.timestamp);
+                uint256 _remainder = TLCLib.sub(pauseOfLifeCycle(_tierId), block.timestamp);
                 if (_remainder >= lifeCycle(_tierId)) {
                     return updateFee(_tierId);
                 } 
@@ -111,7 +111,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
         // Ending(5)
         if (lifeCycleStatus(_tierId) == LifeCycleStatus.Ending) {
             if (block.timestamp <= endOfLifeCycle(_tierId)) {
-                uint256 _remainder = _sub(endOfLifeCycle(_tierId), block.timestamp);
+                uint256 _remainder = TLCLib.sub(endOfLifeCycle(_tierId), block.timestamp);
                 if (_remainder >= lifeCycle(_tierId)) {
                     return updateFee(_tierId);
                 } 
@@ -227,9 +227,9 @@ abstract contract ERC721TLCToken is ERC721TLC {
         uint256 _tierId = tierId(tokenId);
 
         if (tokenTimestamp(tokenId) > startOfLifeCycle(_tierId)) {
-            return _add(tokenTimestamp(tokenId), lifeCycleToken(tokenId));
+            return TLCLib.add(tokenTimestamp(tokenId), lifeCycleToken(tokenId));
         } else {
-            return _add(startOfLifeCycle(_tierId), lifeCycleToken(tokenId));
+            return TLCLib.add(startOfLifeCycle(_tierId), lifeCycleToken(tokenId));
         }
     }
 
@@ -237,7 +237,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// Note: The return value will be queried by {ERC721TLCDataURI - _body} metadata.
     /// See: {_tokenStatus}.
     function tokenStatus(uint256 tokenId) public view virtual returns (string memory result) {
-        if (!_exists(tokenId)) _revert(TokenDoesNotExist.selector);
+        if (!_exists(tokenId)) revert TokenDoesNotExist();
         uint256 _status = _tokenStatus(tokenId);
         
         if (_status == 0) {
@@ -292,12 +292,12 @@ abstract contract ERC721TLCToken is ERC721TLC {
         _requireStatusIsNotFinished(tierId);
         // Paused(4)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) {
-            if (block.timestamp <= pauseOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
+            if (block.timestamp <= pauseOfLifeCycle(tierId)) revert InvalidTimeToInitialize();
             LibMap.set(_fee, tierId, uint128(fee));
         }
         // Ending(5)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
-            if (block.timestamp <= endOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
+            if (block.timestamp <= endOfLifeCycle(tierId)) revert InvalidTimeToInitialize();
             LibMap.set(_fee, tierId, uint128(fee));
         }
         // NotLive(0) / ReadyToStart(1) / ReadyToLive(2) / Live(3)
@@ -336,9 +336,9 @@ abstract contract ERC721TLCToken is ERC721TLC {
         uint256 _tierId = tierId(tokenId);
 
         if (lifeCycleStatus(_tierId) == LifeCycleStatus.Live) {
-            // if (block.timestamp < _sub(endOfLifeCycleToken(tokenId), 7200)) {  
-            if (block.timestamp < _sub(endOfLifeCycleToken(tokenId), 120)) {                       // TESTNET !!!                     
-                _revert(InvalidTimeToUpdate.selector);
+            // if (block.timestamp < TLCLib.sub(endOfLifeCycleToken(tokenId), 7200)) {  
+            if (block.timestamp < TLCLib.sub(endOfLifeCycleToken(tokenId), 120)) {                       // TESTNET !!!                     
+                revert InvalidTimeToUpdate();
             } 
             _validateFullUpdateFee(tokenId);
         } else if (lifeCycleStatus(_tierId) == LifeCycleStatus.Paused) {
@@ -348,7 +348,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
             _validateOffset(tokenId, endOfLifeCycle(_tierId));
             _validateRemainder(tokenId, endOfLifeCycle(_tierId));
         } else {
-            _revert(InvalidLifeCycleStatus.selector);
+            revert InvalidLifeCycleStatus();
         }
     }
 
@@ -390,7 +390,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// @dev LifeCycleStatus must be at NOT Finished(6) for `tierId`.
     function _requireStatusIsNotFinished(uint256 tierId) private view {
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) {
-            _revert(InvalidLifeCycleStatus.selector);
+            revert InvalidLifeCycleStatus();
         }
     }
 
@@ -408,12 +408,12 @@ abstract contract ERC721TLCToken is ERC721TLC {
     ///   current time (block.timestamp) has reached the `offset`.
     /// ```
     function _validateOffset(uint256 tokenId, uint256 offset) private view {
-        // if (block.timestamp < _sub(endOfLifeCycleToken(tokenId), 7200)) {      
-        if (block.timestamp < _sub(endOfLifeCycleToken(tokenId), 120)) {                           // TESTNET !!!                                 
-            _revert(InvalidTimeToUpdate.selector);
+        // if (block.timestamp < TLCLib.sub(endOfLifeCycleToken(tokenId), 7200)) {      
+        if (block.timestamp < TLCLib.sub(endOfLifeCycleToken(tokenId), 120)) {                           // TESTNET !!!                                 
+            revert InvalidTimeToUpdate();
         }
-        if (block.timestamp > _sub(offset, 60)) {                                                  
-            _revert(InvalidTimeToUpdate.selector);
+        if (block.timestamp > TLCLib.sub(offset, 60)) {                                                  
+            revert InvalidTimeToUpdate();
         }
     }
 
@@ -426,7 +426,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// ```
     function _validateRemainder(uint256 tokenId, uint256 offset) private {
         uint256 _tierId = tierId(tokenId);
-        uint256 _remainder = _sub(offset, block.timestamp);
+        uint256 _remainder = TLCLib.sub(offset, block.timestamp);
 
         if (_remainder >= lifeCycle(_tierId)) {
             _validateFullUpdateFee(tokenId);
@@ -435,7 +435,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
             _validateProportionalUpdateFee(tokenId, offset);
         } 
         if (_remainder == 0) {
-            _revert(UnableToUpdate.selector);
+            revert UnableToUpdate();
         }
     }
 
@@ -443,7 +443,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// See: {updateFee}.
     function _validateFullUpdateFee(uint256 tokenId) private {
         uint256 _tierId = tierId(tokenId);
-        if (msg.value < updateFee(_tierId)) _revert(InsufficientBalance.selector);
+        if (msg.value < updateFee(_tierId)) revert InsufficientBalance();
     }
 
     /// @dev Validate proportional token life cycle update fee for `tokenId` based on its `offset`.
@@ -451,7 +451,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     function _validateProportionalUpdateFee(uint256 tokenId, uint256 offset) private {
         uint256 _tierId = tierId(tokenId);
         uint256 _proportionalFee = _calculateProportionalUpdateFee(_tierId, offset);
-        if (msg.value < _proportionalFee) _revert(InsufficientBalance.selector);
+        if (msg.value < _proportionalFee) revert InsufficientBalance();
     }
 
     /// @dev Calculate proportional token life cycle update fee for `tierId` with `offset`.
@@ -461,7 +461,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
         returns (uint256 result)
     {
         // Proportional fee = (`offset` - block.timestamp) * updateFee(tier) / lifeCycle(tier)
-        uint256 _remainder = _sub(offset, block.timestamp);
+        uint256 _remainder = TLCLib.sub(offset, block.timestamp);
         result = _remainder * updateFee(tierId) / lifeCycle(tierId);
     }
 
