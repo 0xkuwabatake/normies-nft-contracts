@@ -103,7 +103,7 @@ contract NormiesGalaxy is
     // ============================================================================================
 
     /// @dev Tier ID or sub-tier ID can not be 0 and sub-tierId maximum value is 3 (three).
-    modifier mustComply(uint256 tierId, uint256 subTierId) {
+    modifier isValid(uint256 tierId, uint256 subTierId) {
         if (tierId == 0) _revert(InvalidTierId.selector);
         if (subTierId == 0 || subTierId > 3) _revert(InvalidSubTierId.selector);
         _;
@@ -135,7 +135,7 @@ contract NormiesGalaxy is
     /// @dev Mints single quantity of token ID for `subTierId` from `tierId` by trusted forwarder to `signer`.
     function claim(address signer, uint256 tierId, uint256 subTierId)
         external
-        mustComply(tierId, subTierId)
+        isValid(tierId, subTierId)
         onlyTrustedForwarder 
         whenNotPaused
     {
@@ -154,7 +154,7 @@ contract NormiesGalaxy is
     /// @dev Mints single quantity of token ID for `subTierId` from `tierId` to `to`.
     function mintTo(address to, uint256 tierId, uint256 subTierId) 
         external
-        mustComply(tierId, subTierId)
+        isValid(tierId, subTierId)
         onlyOwnerOrRoles(1) 
         whenNotPaused
     {

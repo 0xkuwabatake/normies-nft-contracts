@@ -96,7 +96,7 @@ contract NormiesComet is
     // ============================================================================================
 
     /// @dev Tier ID can not be 0 (zero).
-    modifier mustComply(uint256 tierId) {
+    modifier isValid(uint256 tierId) {
         if (tierId == 0) _revert(InvalidTierId.selector);
         _;
     }
@@ -126,7 +126,7 @@ contract NormiesComet is
     /// @dev Mints single quantity of token ID from `tierId` by trusted forwarder to `signer`.
     function claim(address signer, uint256 tierId) 
         external
-        mustComply(tierId)
+        isValid(tierId)
         onlyTrustedForwarder
         whenNotPaused
     {
@@ -143,7 +143,7 @@ contract NormiesComet is
     /// @dev Mints single quantity of token ID from `tierId` to `to`.
     function mintTo(address to, uint256 tierId)
         external
-        mustComply(tierId)
+        isValid(tierId)
         onlyOwnerOrRoles(1)
         whenNotPaused
     {
@@ -154,7 +154,7 @@ contract NormiesComet is
     /// @dev Mints single quantity of token ID from `tierId` to `recipients`.
     function airdrop(address[] calldata recipients, uint256 tierId) 
         external
-        mustComply(tierId)
+        isValid(tierId)
         onlyOwnerOrRoles(1)
         whenNotPaused 
     {
