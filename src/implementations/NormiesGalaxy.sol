@@ -26,8 +26,10 @@ interface IPOAPContract {
     function isTierOwned(address addr, uint256 tierId) external view returns (bool result);
 }
 
-/// @notice POAP for the winners implementation contract by Normies (https://normi.es)
-/// @author 0xkuwabatake (@0xkuwabatake)
+/// @notice      POAP for the winners implementation contract by Normies (https://normi.es)
+/// @author      0xkuwabatake (@0xkuwabatake)
+/// @custom:note Non-logical adjustments implementation contract from:
+///              https://basescan.org/address/0x00000000df51addc12490353edbeecc93809a846#code
 contract NormiesGalaxy is
     ERC721ST,
     ERC721TransferValidator,

@@ -23,8 +23,10 @@ interface IERC721TransferValidator {
     function validateTransfer(address caller, address from, address to, uint256 tokenId) external view;
 }
 
-/// @notice POAP implementation contract by Normies (https://normi.es)
-/// @author 0xkuwabatake (@0xkuwabatake)
+/// @notice      POAP implementation contract by Normies (https://normi.es)
+/// @author      0xkuwabatake (@0xkuwabatake)
+/// @custom:note Non-logical adjustments implementation contract from:
+///              https://basescan.org/address/0x000000008e12c2701d9be1bfc20f29185f892fcc#code
 contract NormiesComet is
     ERC721T,
     ERC721TransferValidator,
