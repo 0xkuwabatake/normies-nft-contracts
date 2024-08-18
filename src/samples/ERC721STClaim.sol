@@ -293,7 +293,7 @@ contract ERC721STClaim is
         return _pausedStatus;
     }
 
-    ///////// INTERNAL FUNCTIONS ///////////////////////////////////////////////////////////////////O-'
+    ///////// INTERNAL FUNCTION ///////////////////////////////////////////////////////////////////O-'
 
     /// @dev See {ERC721 - _beforeTokenTransfer}.
     function _beforeTokenTransfer(address from, address to, uint256 id)
@@ -312,10 +312,10 @@ contract ERC721STClaim is
         }
     }
 
-    ///////// INTERNAL MINT VALIDATOR LOGIC FUNCTIONS /////////
+    ///////// PRIVATE MINT VALIDATOR LOGIC FUNCTIONS /////////
 
     /// @dev Number minted from `to` for `subTierId` from `tierId` validator.
-    function _validateNumberMinted(address to, uint256 tierId) internal {
+    function _validateNumberMinted(address to, uint256 tierId) private {
         if (_numberMinted[to][tierId] == _MAX_NUMBER_MINTED) {
             _revert(ExceedsMaxNumberMinted.selector);
         }
@@ -325,14 +325,14 @@ contract ERC721STClaim is
     }
 
     /// @dev `tierId` owned by `addr` from POAP contract validator.
-    function _validateTierOfOwner(address addr, uint256 tierId) internal view {
+    function _validateTierOfOwner(address addr, uint256 tierId) private view {
         if (!poapContract.isTierOwned(addr, tierId)) {
             _revert(InvalidOwnerOfTierIdFromPoapContract.selector);
         } 
     }
 
     /// @dev Claimed `subTierId` status from `tierId` validator.
-    function _validateClaimedSubTier(uint256 tierId, uint256 subTierId) internal {
+    function _validateClaimedSubTier(uint256 tierId, uint256 subTierId) private {
         if (_subTierClaimed[tierId][subTierId]) _revert(SubTierAlreadyClaimed.selector);
         _subTierClaimed[tierId][subTierId] = true;
     }

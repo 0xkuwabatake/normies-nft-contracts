@@ -324,7 +324,7 @@ contract NormiesGalaxy is
     }
 
     // ============================================================================================
-    //          O-' INTERNAL FUNCTIONS
+    //          O-' INTERNAL FUNCTION
     // ============================================================================================
 
     /// @dev See {ERC721 - _beforeTokenTransfer}.
@@ -344,10 +344,14 @@ contract NormiesGalaxy is
         }
     }
 
-    ///////// INTERNAL MINT VALIDATOR LOGIC FUNCTIONS /////////
+    // ============================================================================================
+    //          O-' PRIVATE FUNCTIONS
+    // ============================================================================================
+
+    ///////// PRIVATE MINT VALIDATOR LOGIC FUNCTIONS /////////
 
     /// @dev Number minted from `to` for `subTierId` from `tierId` validator.
-    function _validateNumberMinted(address to, uint256 tierId) internal {
+    function _validateNumberMinted(address to, uint256 tierId) private {
         if (_numberMinted[to][tierId] == _MAX_NUMBER_MINTED) {
             _revert(ExceedsMaxNumberMinted.selector);
         }
@@ -357,14 +361,14 @@ contract NormiesGalaxy is
     }
 
     /// @dev `tierId` owned by `addr` from POAP contract validator.
-    function _validateTierOfOwner(address addr, uint256 tierId) internal view {
+    function _validateTierOfOwner(address addr, uint256 tierId) private view {
         if (!poapContract.isTierOwned(addr, tierId)) {
             _revert(InvalidOwnerOfTierIdFromPoapContract.selector);
         } 
     }
 
     /// @dev Claimed `subTierId` status from `tierId` validator.
-    function _validateClaimedSubTier(uint256 tierId, uint256 subTierId) internal {
+    function _validateClaimedSubTier(uint256 tierId, uint256 subTierId) private {
         if (_subTierClaimed[tierId][subTierId]) _revert(SubTierAlreadyClaimed.selector);
         _subTierClaimed[tierId][subTierId] = true;
     }

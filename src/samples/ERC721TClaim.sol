@@ -287,7 +287,7 @@ contract ERC721TClaim is
         return _pausedStatus;
     }
 
-    ///////// INTERNAL FUNCTIONS //////////////////////////////////////////////////////////////////O-'
+    ///////// INTERNAL FUNCTION ///////////////////////////////////////////////////////////////////O-'
 
     /// @dev See {ERC721 - _beforeTokenTransfer}.
     function _beforeTokenTransfer(address from, address to, uint256 id)
@@ -306,10 +306,12 @@ contract ERC721TClaim is
         }
     }
 
-    ///////// INTERNAL MINT VALIDATOR LOGIC FUNCTION /////////
+    ///////// PRIVATE FUNCTIONS ///////////////////////////////////////////////////////////////////O-'
+
+    ///////// PRIVATE MINT VALIDATOR LOGIC FUNCTION /////////
 
     /// @dev Number minted from `addr` for `tierId` validator.
-    function _validateNumberMinted(address addr, uint256 tierId) internal {
+    function _validateNumberMinted(address addr, uint256 tierId) private {
         if (_numberMinted[addr][tierId] == _MAX_NUMBER_MINTED) {
             _revert(ExceedsMaxNumberMinted.selector);
         }
@@ -318,15 +320,15 @@ contract ERC721TClaim is
         }
     }
 
-    ///////// INTERNAL TIER URI SETTER FUNCTION /////////
+    ///////// PRIVATE TIER URI SETTER FUNCTION /////////
 
     /// @dev Sets `uri` as NFT metadata for `tierId`.
-    function _setTierURI(uint256 tierId, string memory uri) internal {
+    function _setTierURI(uint256 tierId, string memory uri) private {
         _tierURI[tierId] = uri;
         emit TierURIUpdate(tierId, uri);
     }
 
-    ///////// PRIVATE HELPER FUNCTION ////////////////////////////////////////////////////////////O-'
+    ///////// PRIVATE HELPER FUNCTION /////////
 
     /// @dev Helper function for more efficient reverts.
     function _revert(bytes4 errorSelector) private pure {
