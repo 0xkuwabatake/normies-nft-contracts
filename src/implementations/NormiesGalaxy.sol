@@ -171,7 +171,19 @@ contract NormiesGalaxy is
         whenNotPaused
     {
         if (tierId == 0) _revert(InvalidTierId.selector);
-        _safeAirdropSubTier(recipients, tierId, subTierIds);
+        if (recipients.length > _MAX_AIRDROP_RECIPIENTS) _revert(ExceedsMaxRecipients.selector);
+        if (recipients.length != subTierIds.length) _revert(ArrayLengthMismatch.selector);
+        uint256 i;
+        unchecked {
+            do {
+                if (subTierIds[i] == 0 || subTierIds[i] > 3) _revert(InvalidSubTierId.selector);
+                _validateNumberMinted(recipients[i], tierId);
+                _validateTierOfOwner(recipients[i], tierId); 
+                _validateClaimedSubTier(tierId, subTierIds[i]);
+                _safeMintSubTier(recipients[i], tierId, subTierIds[i]);
+                ++i;
+            } while (i < recipients.length);
+        }
     }
     
     ///////// NFT METADATA OPERATIONS /////////
@@ -355,30 +367,5 @@ contract NormiesGalaxy is
     function _validateClaimedSubTier(uint256 tierId, uint256 subTierId) internal {
         if (_subTierClaimed[tierId][subTierId]) _revert(SubTierAlreadyClaimed.selector);
         _subTierClaimed[tierId][subTierId] = true;
-    }
-
-    ///////// INTERNAL AIRDROP LOGIC FUNCTIONS /////////
-
-    /// @dev Safe mints single quantity of token ID to `recipients` and set to `subTierId` from `tierId`.
-    function _safeAirdropSubTier(
-        address[] memory recipients,
-        uint256 tierId,
-        uint256[] memory subTierIds
-    ) internal {
-        if (recipients.length > _MAX_AIRDROP_RECIPIENTS) _revert(ExceedsMaxRecipients.selector);
-        if (recipients.length != subTierIds.length) _revert(ArrayLengthMismatch.selector);
-        uint256 i;
-        unchecked {
-            do {
-                if (subTierIds[i] == 0 || subTierIds[i] > 3) _revert(InvalidSubTierId.selector);
-                _validateNumberMinted(recipients[i], tierId);
-                if (!poapContract.isTierOwned(recipients[i], tierId)) {
-                    _revert(InvalidOwnerOfTierIdFromPoapContract.selector);
-                } 
-                _validateClaimedSubTier(tierId, subTierIds[i]);
-                _safeMintSubTier(recipients[i], tierId, subTierIds[i]);
-                ++i;
-            } while (i < recipients.length);
-        }
     }
 }
