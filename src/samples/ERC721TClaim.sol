@@ -128,7 +128,15 @@ contract ERC721TClaim is
         onlyOwnerOrRoles(1)
         whenNotPaused 
     {
-        _safeAirdropTier(recipients, tierId);
+        if (recipients.length > _MAX_AIRDROP_RECIPIENTS) _revert(ExceedsMaxRecipients.selector);
+        uint256 i;
+        unchecked {
+            do {
+                _validateNumberMinted(recipients[i], tierId);
+                _safeMintTier(recipients[i], tierId);
+                ++i;
+            } while (i < recipients.length);
+        }
     }
 
     ///////// NFT METADATA OPERATIONS /////////
@@ -307,21 +315,6 @@ contract ERC721TClaim is
         }
         unchecked { 
             ++_numberMinted[addr][tierId]; 
-        }
-    }
-
-    ///////// INTERNAL AIRDROP LOGIC FUNCTION /////////
-
-    /// @dev Safe mint single quantity of token ID to `recipients` for `tierId`.
-    function _safeAirdropTier(address[] memory recipients, uint256 tierId) internal {
-        if (recipients.length > _MAX_AIRDROP_RECIPIENTS) _revert(ExceedsMaxRecipients.selector);
-        uint256 i;
-        unchecked {
-            do {
-                _validateNumberMinted(recipients[i], tierId);
-                _safeMintTier(recipients[i], tierId);
-                ++i;
-            } while (i < recipients.length);
         }
     }
 
