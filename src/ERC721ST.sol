@@ -122,7 +122,7 @@ abstract contract ERC721ST is ERC721 {
         unchecked {
             ++_currentIndex;
         }
-        _setMintExtraDataFor(_tokenId, tier, subTier);
+        _setMintExtraData(_tokenId, tier, subTier);
         _safeMint(to, _tokenId);
 
         emit SubTierSet(_tokenId, tier, subTier, block.timestamp);
@@ -132,7 +132,7 @@ abstract contract ERC721ST is ERC721 {
 
     /// @dev Sets mint extra data for`tokenId` to `subTier` from `tier` and `block.timestamp`.
     /// See: {ERC721 - _setExtraData}.
-    function _setMintExtraDataFor(
+    function _setMintExtraData(
         uint256 tokenId,
         uint256 tier,
         uint256 subTier
