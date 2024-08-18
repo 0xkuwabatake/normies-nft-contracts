@@ -31,7 +31,7 @@ contract ERC721TClaim is
     ///////// STORAGE /////////////////////////////////////////////////////////////////////////////O-'
 
     /// @dev Mapping from `tierId` => `tierURI`.
-    mapping (uint256 => string) internal _tierURI;
+    mapping (uint256 => string) private _tierURI;
 
     /// @dev Mapping from signer or recipient `address` => `tierId` => number minted token ID.
     mapping(address => mapping(uint256 => uint256)) private _numberMinted;
