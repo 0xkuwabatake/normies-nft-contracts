@@ -12,9 +12,6 @@ abstract contract ERC721ST is ERC721 {
     /// @dev The next token ID to be minted.
     uint256 private _currentIndex;
 
-    /// @dev The number of tokens burned.
-    uint256 private _burnCounter;
-
     /// @dev Token name.
     string private _name;
 
