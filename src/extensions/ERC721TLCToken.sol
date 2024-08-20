@@ -281,12 +281,19 @@ abstract contract ERC721TLCToken is ERC721TLC {
     ///   Paused(4) / Ending (5).
     /// - If Paused(4): it only can be initialized when tx's block.timestamp is greater than defined
     ///   pause of life cycle timestamp.
+    /// - If Ending(5): it only can be initialized when tx's block.timestamp is greater than defined
+    ///   end of life cycle timestamp.
     /// ```
     function _setUpdateFee(uint256 tierId, uint256 fee) internal {
-        _requireStatusIsNotEndingOrNotFinished(tierId);
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) _revert(InvalidLifeCycleStatus.selector);
         // Paused(4)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) {
             if (block.timestamp <= pauseOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
+            LibMap.set(_fee, tierId, uint128(fee));
+        }
+        // Ending(5)
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
+            if (block.timestamp <= endOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
             LibMap.set(_fee, tierId, uint128(fee));
         }
         // NotLive(0) / ReadyToStart(1) / ReadyToLive(2) / Live(3)
@@ -383,18 +390,6 @@ abstract contract ERC721TLCToken is ERC721TLC {
     }
 
     ///////// PRIVATE FUNCTIONS ///////////////////////////////////////////////////////////////////O-'
-
-    ///////// PRIVATE LIFE CYCLE STATUS FOR TIER ID FOR UPDATE FEE SETTER /////////
-
-    /// @dev LifeCycleStatus must be at NotLive(0) / ReadyToStart(1) / ReadyToLive(2) / Live(3) / Paused(4)
-    function _requireStatusIsNotEndingOrNotFinished (uint256 tierId) private view {
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) {
-            _revert(InvalidLifeCycleStatus.selector);
-        }
-    }
 
     ///////// PRIVATE TOKEN LIFE CYCLE UPDATE FEE VALIDATORS /////////
 
