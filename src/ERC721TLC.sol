@@ -117,9 +117,9 @@ abstract contract ERC721TLC is ERC721, TierLifeCycle {
     /// @dev Sets mint extra data for `tokenId` to `tier`, `block.timestamp` and life cycle `tier`.
     /// See: {TierLifeCycle - lifeCycle}, {ERC721 - _setExtraData}.
     function _setMintExtraData(uint256 tokenId, uint256 tier) internal {
-        uint96 _packed = uint96(tier) |                         // 2 bytes - Tier ID                      
-        uint96(block.timestamp) << 16 |                         // 5 bytes - block.timestamp
-        uint96(lifeCycle(tier)) << 56;                          // 5 bytes - LifeCycle for token ID                            
+        uint96 _packed = uint96(tier) |                          // 2 bytes - `tier`                     
+        uint96(block.timestamp) << 16 |                          // 5 bytes - block.timestamp
+        uint96(lifeCycle(tier)) << 56;                           // 5 bytes - life cycle for `tier`                            
 
         _setExtraData(tokenId, _packed);
     }

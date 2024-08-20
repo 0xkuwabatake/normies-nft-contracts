@@ -152,7 +152,7 @@ abstract contract TierLifeCycle {
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
             uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
             // if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 172800)) {
-            if (block.timestamp < _sub(_endOfFirstLifeCyclePeriod, 120)) {                        // TESTNET !!!
+            if (block.timestamp < _sub(_endOfFirstLifeCyclePeriod, 120)) {                         // TESTNET !!!
                 _revert(InvalidTimeToInitialize.selector);
             } 
             LibMap.set(_lifeCycle, tierId, uint40(_totalSeconds));
@@ -169,9 +169,9 @@ abstract contract TierLifeCycle {
     /// @dev Sets start of life cycle for `tierId`.
     /// 
     /// Note:
-    /// Start of life cycle is a mark time of the beginning of life cycle period. Once it had been
-    /// defined and life cycle status is Live(3), it can never be reinitialized. It only can reset
-    /// back to zero value after {_finishLifeCycle}.
+    /// Start of life cycle is a mark time of the beginning of life cycle period. 
+    /// - Once it had been defined and life cycle status is Live(3), it can never be reinitialized. 
+    /// - It only can reset back to zero value after {_finishLifeCycle}.
     /// 
     /// Requirements:
     /// - LifeCycleStatus must be at: ReadyToStart(1) / ReadyToLive(2).
@@ -434,7 +434,7 @@ abstract contract TierLifeCycle {
     function _require48HrsBeforeEndOfFirstPeriod(uint256 tierId) private view {
         uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
         // if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 172800)) {
-        if (block.timestamp < _sub(_endOfFirstLifeCyclePeriod, 120)) {                            // TESTNET !!!
+        if (block.timestamp < _sub(_endOfFirstLifeCyclePeriod, 120)) {                             // TESTNET !!!
             _revert(InvalidTimeToInitialize.selector);
         }
     }

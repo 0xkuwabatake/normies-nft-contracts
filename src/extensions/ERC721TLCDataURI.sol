@@ -4,7 +4,7 @@ pragma solidity ^0.8.4;
 import "./ERC721TLCToken.sol";
 import "../utils/TLCLib.sol";
 
-/// @notice A customized ERC721TLC contract extension to manage NFT metadata based on its latest life cycle state.
+/// @notice A customized ERC721TLC contract extension to manage NFT metadata based on its latest token life cycle status.
 /// @author 0xkuwabatake (@0xkuwabatake)
 abstract contract ERC721TLCDataURI is ERC721TLCToken {
     using TLCLib for *;

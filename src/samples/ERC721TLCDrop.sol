@@ -82,7 +82,7 @@ contract ERC721TLCDrop is
     /// @dev Revert with an error if `discountBPS` exceeds maximum BPS (10000).
     error ExceedsMaxBPS();
 
-    /// @dev Revert with an error if token life cycle update fee is undefined.
+    /// @dev Revert with an error if fee is undefined.
     error UndefinedFee();
 
     /// @dev Revert with an error if not the owner of token or tier ID.
@@ -575,6 +575,7 @@ contract ERC721TLCDrop is
     }
 
     /// @dev Returns if `tierId` is owned by `addr`. true if it's owned, false otherwise.
+    /// See: {ERC721TLC - tiersOfOwner}.
     function isTierOwned(address addr, uint256 tierId) public view returns (bool result) {
         uint256[] memory _tiersOfOwner = tiersOfOwner(addr);
         LibSort.sort(_tiersOfOwner);

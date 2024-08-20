@@ -14,8 +14,8 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// Note:
     /// - Index  1 - 10 are allocated for token life cycle update `_fee` from `tierId` #1 - #10.
     /// - Index 11 - 17 are allocated for mint `_fee` from `tierId` #1 - #7 at child contract.
-    /// - Index 18 - 23 are allocated for mint `_fee` to mint `tierToMint` for the owner of tierId` #1 at child contract.
-    /// - Index 24 - 27 is allocated for mint fee to mint `tierToMint` for the owner of `tierId` #2 at child contract.
+    /// - Index 18 - 22 are allocated for mint `_fee` to mint `tierToMint` for the owner of tierId` #1 at child contract.
+    /// - Index 23 - 27 is allocated for mint fee to mint `tierToMint` for the owner of `tierId` #2 at child contract.
     /// ```
     LibMap.Uint128Map internal _fee;
 
@@ -253,16 +253,12 @@ abstract contract ERC721TLCToken is ERC721TLC {
     ///////// INTERNAL TOKEN LIFE CYCLE UPDATE OPERATION /////////
 
     /// @dev Update token life cycle for `tokenId`.
-    /// See: {ERC721 - _setExtraData}.
+    /// See: {TierLifeCycle - lifeCycle}, {ERC721 - _setExtraData}.
     function _updateTokenLifeCycle(uint256 tokenId) internal {
-        // Cache and repacked existing `_tierId` from `tokenId` into 2 bytes (16 bits) slots,
-        // packed current block.timestamp into 5 bytes (40 bits) slots and
-        // packed current life cycle for tier Id into 5 bytes (40 bits) slots,
-        // then store all of them (12 bytes in total) via {ERC721 - _setExtraData}.
-        uint256 _tierId = tierId(tokenId);
-        uint96 _packed = uint96(_tierId) |                                               
-        uint96(block.timestamp) << 16 |                       
-        uint96(lifeCycle(_tierId)) << 56;                     
+        uint256 _tierId = tierId(tokenId);                                  
+        uint96 _packed = uint96(_tierId) |                     // 2 bytes - existing `_tierId`                                          
+        uint96(block.timestamp) << 16 |                        // 5 bytes - block.timestamp         
+        uint96(lifeCycle(_tierId)) << 56;                      // 5 bytes - life cycle for `tierId`               
         _setExtraData(tokenId, _packed);
 
         emit TokenLifeCycleUpdate(tokenId, _tierId, block.timestamp, lifeCycle(_tierId));
@@ -277,7 +273,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// Update fee is a mandatory non-gas fee that must must be paid in ether either in full or 
     /// proportionally by token owners when updating their token life cycle 
     /// at the end of life cycle for their owned tokenId.
-    /// - It is mandatory to be initialized prior to {TierLifeCycle - setStartOfLifeCycle},
+    /// - It is mandatory to be initialized prior to {TierLifeCycle - setStartOfLifeCycle} --
     ///   this condition must be well-validated at child contract.
     /// 
     /// Requirements:
@@ -329,21 +325,24 @@ abstract contract ERC721TLCToken is ERC721TLC {
     ///   contract owner update its token life cycle too soon but it's still fair enough for them.
     /// - If Paused(4) / Ending(5): beside of condition above, the current time must be validated 
     ///   with end of life cycle `tokenId` and `offset` -- see {_validateOffset}, 
-    ///   before comparing current time with`offset` to get the remainder as the basis of total fee 
+    ///   before comparing current time with `offset` to get the remainder as the basis of total fee 
     ///   that needed to be paid -- see {_validateRemainder}.  
     /// ```
     function _validateUpdateFee(uint256 tokenId) internal {
         uint256 _tierId = tierId(tokenId);
 
+        // Live(3)
         if (lifeCycleStatus(_tierId) == LifeCycleStatus.Live) {
             // if (block.timestamp < _sub(endOfLifeCycleToken(tokenId), 7200)) {  
             if (block.timestamp < _sub(endOfLifeCycleToken(tokenId), 120)) {                       // TESTNET !!!                     
                 _revert(InvalidTimeToUpdate.selector);
             } 
             _validateFullUpdateFee(tokenId);
+        // Paused(4)
         } else if (lifeCycleStatus(_tierId) == LifeCycleStatus.Paused) {
             _validateOffset(tokenId, pauseOfLifeCycle(_tierId));
             _validateRemainder(tokenId, pauseOfLifeCycle(_tierId));
+        // Ending(5)
         } else if (lifeCycleStatus(_tierId) == LifeCycleStatus.Ending) {
             _validateOffset(tokenId, endOfLifeCycle(_tierId));
             _validateRemainder(tokenId, endOfLifeCycle(_tierId));
