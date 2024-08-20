@@ -689,11 +689,6 @@ contract ERC721TLCDrop is
             _revert(UndefinedFee.selector);
         }       
     }
-
-    /// @dev msg.value compare to `fee` validator.
-    function _validateMsgValue(uint256 fee) private {
-        if (msg.value < fee) _revert(InsufficientBalance.selector);
-    }
         
     ///////// PRIVATE HELPER FUNCTIONS /////////
 
