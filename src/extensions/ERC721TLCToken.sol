@@ -352,6 +352,13 @@ abstract contract ERC721TLCToken is ERC721TLC {
         }
     }
 
+    ///////// INTERNAL MSG.VALUE COMPARE TO FEE VALIDATOR /////////
+
+    /// @dev msg.value compare to `fee` validator.
+    function _validateMsgValue(uint256 fee) internal {
+        if (msg.value < fee) _revert(InsufficientBalance.selector);
+    }
+
     ///////// INTERNAL TOKEN STATUS GETTER /////////
 
     /// @dev Returns token status for `tokenId`, either in 0 (zero) or 1 (one).
@@ -434,7 +441,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// See: {updateFee}.
     function _validateFullUpdateFee(uint256 tokenId) private {
         uint256 _tierId = tierId(tokenId);
-        if (msg.value < updateFee(_tierId)) _revert(InsufficientBalance.selector);
+        _validateMsgValue(updateFee(_tierId));
     }
 
     /// @dev Validate proportional token life cycle update fee for `tokenId` based on its `offset`.
@@ -442,7 +449,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     function _validateProportionalUpdateFee(uint256 tokenId, uint256 offset) private {
         uint256 _tierId = tierId(tokenId);
         uint256 _proportionalFee = _calculateProportionalUpdateFee(_tierId, offset);
-        if (msg.value < _proportionalFee) _revert(InsufficientBalance.selector);
+        _validateMsgValue(_proportionalFee);
     }
 
     /// @dev Calculate proportional token life cycle update fee for `tierId` with `offset`.
