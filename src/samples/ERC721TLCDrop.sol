@@ -320,7 +320,7 @@ contract ERC721TLCDrop is
     /// @dev Sets mint `fee` for `tierId`.
     function setMintFee(uint256 tierId, uint256 fee)
         external
-        isPublicMintTier(tierId)
+        isValidTier(tierId)
         onlyRolesOrOwner(1)
     {
         // See: {ERC721TLCToken - _fee}.
