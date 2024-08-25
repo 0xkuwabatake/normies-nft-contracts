@@ -147,7 +147,7 @@ contract ERC721TLCDrop is
     ///////// CONSTRUCTOR /////////////////////////////////////////////////////////////////////////O-'
 
     constructor() ERC721TLC("ERC721TLC Drop","721TLC_DROP") {
-        _initializeOwner(tx.origin);
+        _initializeOwner(msg.sender);
         _setTransferValidator(0xA000027A9B2802E1ddf7000061001e5c005A0000);                                                               
         _setDefaultRoyalty(0xfa98aFe34D343D0e63C4C801EBce01d9D4459ECa, 25);                        // TESTNET !!! 
         _setWithdrawalAddress(0xfa98aFe34D343D0e63C4C801EBce01d9D4459ECa);                         // TESTNET !!! 
