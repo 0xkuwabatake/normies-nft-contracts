@@ -670,25 +670,26 @@ contract ERC721TLCDrop is
     /// @dev Mint fee from `tierId` for the owner of tierId #1 and/or tierId #2 validator.
     /// 
     /// Conditions:
-    /// - Mint fee for `tierId` must be non-zero value.
+    /// - Mint fee and mint fee for tier one owner and tier two owner for `tierId` 
+    ///   must be non-zero value.
     /// - For the owner of tier #1 and #2, {mintFeeForTierOneOwner}.
     /// - For the owner of tier #1 only, {mintFeeForTierOneOwner}.
     /// - For the owner of tier #2 only, {mintFeeForTierTwoOwner}.
     ///```
     function _validateMintFeeForGenesisOwner(address owner, uint256 tierId) private {
-        if (mintFee(tierId) != 0) {
-            if (isTierOwned(owner, 1) && isTierOwned(owner, 2)) {
-                _validateMsgValue(mintFeeForTierOneOwner(tierId));
-            } else if (isTierOwned(owner, 1)) {
-                _validateMsgValue(mintFeeForTierOneOwner(tierId));
-            } else if (isTierOwned(owner, 2)) {
-                _validateMsgValue(mintFeeForTierTwoOwner(tierId));
-            } else {
-                _revert(InvalidOwner.selector);
-            }
+        if (mintFee(tierId) == 0) _revert(UndefinedFee.selector);
+        if (mintFeeForTierOneOwner(tierId) == 0) _revert(UndefinedFee.selector);
+        if (mintFeeForTierTwoOwner(tierId) == 0) _revert(UndefinedFee.selector);
+
+        if (isTierOwned(owner, 1) && isTierOwned(owner, 2)) {
+            _validateMsgValue(mintFeeForTierOneOwner(tierId));
+        } else if (isTierOwned(owner, 1)) {
+            _validateMsgValue(mintFeeForTierOneOwner(tierId));
+        } else if (isTierOwned(owner, 2)) {
+            _validateMsgValue(mintFeeForTierTwoOwner(tierId));
         } else {
-            _revert(UndefinedFee.selector);
-        }       
+            _revert(InvalidOwner.selector);
+        }   
     }
         
     ///////// PRIVATE HELPER FUNCTIONS /////////
