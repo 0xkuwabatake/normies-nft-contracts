@@ -86,7 +86,7 @@ contract ERC721TClaim is
     ///////// CONSTRUCTOR /////////////////////////////////////////////////////////////////////////O-'
 
     constructor() ERC721T("ERC721T Claim","721T_CLAIM") {
-        _initializeOwner(tx.origin); 
+        _initializeOwner(msg.sender); 
         _setTransferValidator(0xA000027A9B2802E1ddf7000061001e5c005A0000);                                                               
         _setDefaultRoyalty(0xfa98aFe34D343D0e63C4C801EBce01d9D4459ECa, 25); 
     }

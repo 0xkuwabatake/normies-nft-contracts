@@ -96,7 +96,7 @@ contract ERC721STClaim is
     ///////// CONSTRUCTOR /////////////////////////////////////////////////////////////////////////O-'
 
     constructor() ERC721ST("ERC721ST Claim","ST_CLAIM") {
-        _initializeOwner(tx.origin);
+        _initializeOwner(msg.sender);
         _setTransferValidator(0xA000027A9B2802E1ddf7000061001e5c005A0000);                                                               
         _setDefaultRoyalty(0xfa98aFe34D343D0e63C4C801EBce01d9D4459ECa, 25);
         poapContract = IPOAPContract(0xf108a39b00FCA4df3e7405A1784CC966D9612258);

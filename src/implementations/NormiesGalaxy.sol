@@ -122,7 +122,7 @@ contract NormiesGalaxy is
     // ============================================================================================
 
     constructor() ERC721ST("Normies Spaceventure Galaxy","NSLXY") {
-        _initializeOwner(tx.origin);
+        _initializeOwner(msg.sender);
         _setTransferValidator(0xA000027A9B2802E1ddf7000061001e5c005A0000);                                                               
         _setDefaultRoyalty(0x351e20B00e2B42CC34Aa58d0D96aA00d4D91dabc, 25);
         poapContract = IPOAPContract(0x000000008e12c2701d9Be1BfC20F29185f892Fcc);

@@ -114,7 +114,7 @@ contract NormiesComet is
     // ============================================================================================
 
     constructor() ERC721T("Normies Spaceventure Comet","NSCMT") {
-        _initializeOwner(tx.origin); 
+        _initializeOwner(msg.sender); 
         _setTransferValidator(0xA000027A9B2802E1ddf7000061001e5c005A0000);                                                               
         _setDefaultRoyalty(0x351e20B00e2B42CC34Aa58d0D96aA00d4D91dabc, 25); 
     }

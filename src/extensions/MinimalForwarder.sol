@@ -57,7 +57,7 @@ contract MinimalForwarder is EIP712, Ownable {
     ///////// CONSTRUCTOR /////////////////////////////////////////////////////////////////////////O-'
 
     constructor() EIP712() {
-        address _owner = tx.origin;
+        address _owner = msg.sender;
         _initializeOwner(_owner);
     }
 
