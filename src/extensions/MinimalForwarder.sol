@@ -75,44 +75,6 @@ contract MinimalForwarder is EIP712, Ownable {
 
     ///////// PUBLIC FUNCTIONS ////////////////////////////////////////////////////////////////////O-'
 
-    /// @dev Returns the next unused nonce from transaction `signer`.
-    function getNonce(address signer) public view returns (uint256) {
-        return _nonces[signer];
-    }
-
-    /// @dev Indicates whether any particular `gasRelay` address is the authorized relayer.
-    function isAuthorizedRelayer(address gasRelay) public view returns (bool) {
-        return gasRelay == relayer;
-    }
-
-    /**
-     * @dev Returns `true` if a `request` is valid for a provided `signature`.
-     * @param request The ForwardRequest from transaction signer.
-     * @param signature The signed ForwardRequest from transaction signer.
-     */
-    function verify(ForwardRequest calldata request, bytes calldata signature) 
-        public
-        view
-        onlyAuthorizedRelayer
-        returns (bool) 
-    {
-        address signer = _hashTypedData(
-            keccak256(
-                abi.encode(
-                    _TYPEHASH,
-                    request.from,
-                    request.to,
-                    request.value,
-                    request.gas,
-                    request.nonce,
-                    keccak256(request.data)
-                )
-            )
-        ).recover(signature);
-
-        return _nonces[request.from] == request.nonce && signer == request.from;
-    }
-
     /**
      * @dev Executes a `request` on behalf of `signature`'s signer using the ERC-2771 protocol.
      * @param request The ForwardRequest from transaction signer.
@@ -121,6 +83,7 @@ contract MinimalForwarder is EIP712, Ownable {
     function execute(ForwardRequest calldata request, bytes calldata signature)
         public
         payable
+        onlyAuthorizedRelayer
         returns (bool, bytes memory) 
     {
         if (!verify(request, signature)) _revert(SignatureDoesNotMatchRequest.selector);
@@ -145,6 +108,43 @@ contract MinimalForwarder is EIP712, Ownable {
         }
 
         return (success, returndata);
+    }
+
+    /// @dev Returns the next unused nonce from transaction `signer`.
+    function getNonce(address signer) public view returns (uint256) {
+        return _nonces[signer];
+    }
+
+    /// @dev Indicates whether any particular `gasRelay` address is the authorized relayer.
+    function isAuthorizedRelayer(address gasRelay) public view returns (bool) {
+        return gasRelay == relayer;
+    }
+
+    /**
+     * @dev Returns `true` if a `request` is valid for a provided `signature`.
+     * @param request The ForwardRequest from transaction signer.
+     * @param signature The signed ForwardRequest from transaction signer.
+     */
+    function verify(ForwardRequest calldata request, bytes calldata signature) 
+        public
+        view
+        returns (bool) 
+    {
+        address signer = _hashTypedData(
+            keccak256(
+                abi.encode(
+                    _TYPEHASH,
+                    request.from,
+                    request.to,
+                    request.value,
+                    request.gas,
+                    request.nonce,
+                    keccak256(request.data)
+                )
+            )
+        ).recover(signature);
+
+        return _nonces[request.from] == request.nonce && signer == request.from;
     }
 
     ///////// INTERNAL FUNCTION ///////////////////////////////////////////////////////////////////O-'
