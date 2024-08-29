@@ -7,8 +7,7 @@ import "solady/auth/Ownable.sol";
 
 /// @notice Minimal Trusted Forwarder contract for meta transaction based on ERC-2771.
 /// @author 0xkuwabatake(@0xkuwabatake)
-/// @author Modified from Openzeppelin
-/// (https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.5/contracts/metatx/MinimalForwarder.sol)
+/// @author Modified from Openzeppelin (https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.5/contracts/metatx/MinimalForwarder.sol)
 contract MinimalForwarder is EIP712, Ownable {
     using ECDSA for bytes32;
 
@@ -63,11 +62,7 @@ contract MinimalForwarder is EIP712, Ownable {
 
     ///////// EXTERNAL FUNCTIONS //////////////////////////////////////////////////////////////////O-'
 
-    /**
-     * @dev Executes a `request` on behalf of `signature`'s signer using the ERC-2771 protocol.
-     * @param request The ForwardRequest from transaction signer.
-     * @param signature The signed ForwardRequest from transaction signer.
-     */
+    /// @dev Executes a `request` on behalf of `signature`'s signer using the ERC-2771 protocol.
     function execute(ForwardRequest calldata request, bytes calldata signature)
         external
         payable
@@ -120,11 +115,7 @@ contract MinimalForwarder is EIP712, Ownable {
         return gasRelay == relayer;
     }
 
-    /**
-     * @dev Returns `true` if a `request` is valid for a provided `signature`.
-     * @param request The ForwardRequest from transaction signer.
-     * @param signature The signed ForwardRequest from transaction signer.
-     */
+    /// @dev Returns `true` if a `request` is valid for a provided `signature`.
     function verify(ForwardRequest calldata request, bytes calldata signature) 
         public
         view
