@@ -63,25 +63,13 @@ contract MinimalForwarder is EIP712, Ownable {
 
     ///////// EXTERNAL FUNCTIONS //////////////////////////////////////////////////////////////////O-'
 
-    /// @dev Sets `gasRelay` for authorized `relayer`.
-    function setRelayer(address gasRelay) external onlyOwner {
-        relayer = gasRelay;
-    }
-
-    /// @dev Reset relayer back to address zero (default).
-    function resetRelayer() external onlyOwner {
-        relayer = address(0);
-    }
-
-    ///////// PUBLIC FUNCTIONS ////////////////////////////////////////////////////////////////////O-'
-
     /**
      * @dev Executes a `request` on behalf of `signature`'s signer using the ERC-2771 protocol.
      * @param request The ForwardRequest from transaction signer.
      * @param signature The signed ForwardRequest from transaction signer.
      */
     function execute(ForwardRequest calldata request, bytes calldata signature)
-        public
+        external
         payable
         onlyAuthorizedRelayer
         returns (bool, bytes memory) 
@@ -109,6 +97,18 @@ contract MinimalForwarder is EIP712, Ownable {
 
         return (success, returndata);
     }
+
+    /// @dev Sets `gasRelay` for authorized `relayer`.
+    function setRelayer(address gasRelay) external onlyOwner {
+        relayer = gasRelay;
+    }
+
+    /// @dev Reset relayer back to address zero (default).
+    function resetRelayer() external onlyOwner {
+        relayer = address(0);
+    }
+
+    ///////// PUBLIC FUNCTIONS ////////////////////////////////////////////////////////////////////O-'
 
     /// @dev Returns the next unused nonce from transaction `signer`.
     function getNonce(address signer) public view returns (uint256) {
