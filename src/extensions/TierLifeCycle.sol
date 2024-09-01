@@ -134,14 +134,11 @@ abstract contract TierLifeCycle {
     /// - If Paused(4): `numberOfDays` is able to be reinitialized after tx's block.timestamp
     ///   is greater than pause of life cycle timestamp that had been defined. 
     /// ```
-    // function _setLifeCycle(uint256 tierId, uint256 numberOfDays) 
-    function _setLifeCycle(uint256 tierId, uint256 numberOfMinutes) internal {                     // TESTNET !!!
+    function _setLifeCycle(uint256 tierId, uint256 numberOfDays) internal {
         _requireStatusIsNotLiveOrLiveOrPaused(tierId);
 
-        // if (numberOfDays < 30) _revert(InvalidNumberOfDays.selector);                        
-        // uint256 _totalSeconds = numberOfDays * 86400; 
-        if (numberOfMinutes < 10) _revert(InvalidNumberOfDays.selector);                           // TESTNET !!!
-        uint256 _totalSeconds = numberOfMinutes * 60;                                              // TESTNET !!!
+        if (numberOfDays < 30) _revert(InvalidNumberOfDays.selector);                        
+        uint256 _totalSeconds = numberOfDays * 86400; 
 
         // NotLive(0)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) {
@@ -151,8 +148,7 @@ abstract contract TierLifeCycle {
         // Live(3)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
             uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
-            // if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 172800)) {
-            if (block.timestamp < _sub(_endOfFirstLifeCyclePeriod, 120)) {                         // TESTNET !!!
+            if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 172800)) {
                 _revert(InvalidTimeToInitialize.selector);
             } 
             LibMap.set(_lifeCycle, tierId, uint40(_totalSeconds));
@@ -433,8 +429,7 @@ abstract contract TierLifeCycle {
     /// Note: first of life cycle period is start of life cycle timestamp plus life cycle in total seconds.
     function _require48HrsBeforeEndOfFirstPeriod(uint256 tierId) private view {
         uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
-        // if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 172800)) {
-        if (block.timestamp < _sub(_endOfFirstLifeCyclePeriod, 120)) {                             // TESTNET !!!
+        if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 172800)) {
             _revert(InvalidTimeToInitialize.selector);
         }
     }

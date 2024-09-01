@@ -385,12 +385,12 @@ contract ERC721TLCDrop is
     ///////// LIFE CYCLE FOR TIER ID SETTERS /////////
 
     /// @dev See: {TierLIfeCycle- _setLifeCycle}.
-    function setLifeCycle(uint256 tierId, uint256 numberOfMinutes)                                 // TESTNET !!!
+    function setLifeCycle(uint256 tierId, uint256 numberOfDays)                                 
         external
         isValidTier(tierId)
         onlyRolesOrOwner(2)
     {
-        _setLifeCycle(tierId, numberOfMinutes);
+        _setLifeCycle(tierId, numberOfDays);
     }
 
     /// @dev See: {TierLifeCycle - _setStartOfLifeCycle}.

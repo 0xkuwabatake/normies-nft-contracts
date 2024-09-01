@@ -333,8 +333,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
 
         // Live(3)
         if (lifeCycleStatus(_tierId) == LifeCycleStatus.Live) {
-            // if (block.timestamp < _sub(endOfLifeCycleToken(tokenId), 7200)) {  
-            if (block.timestamp < _sub(endOfLifeCycleToken(tokenId), 120)) {                       // TESTNET !!!                     
+            if (block.timestamp < _sub(endOfLifeCycleToken(tokenId), 7200)) {                      
                 _revert(InvalidTimeToUpdate.selector);
             } 
             _validateFullUpdateFee(tokenId);
@@ -405,8 +404,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     ///   current time (block.timestamp) has reached the `offset`.
     /// ```
     function _validateOffset(uint256 tokenId, uint256 offset) private view {
-        // if (block.timestamp < _sub(endOfLifeCycleToken(tokenId), 7200)) {      
-        if (block.timestamp < _sub(endOfLifeCycleToken(tokenId), 120)) {                           // TESTNET !!!                                 
+        if (block.timestamp < _sub(endOfLifeCycleToken(tokenId), 7200)) {                                      
             _revert(InvalidTimeToUpdate.selector);
         }
         if (block.timestamp > _sub(offset, 60)) {                                                  
