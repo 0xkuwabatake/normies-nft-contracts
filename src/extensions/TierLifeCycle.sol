@@ -148,7 +148,7 @@ abstract contract TierLifeCycle {
         // Live(3)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
             uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
-            if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 172800)) {
+            if (block.timestamp < _sub(_endOfFirstLifeCyclePeriod, 172800)) {
                 _revert(InvalidTimeToInitialize.selector);
             } 
             LibMap.set(_lifeCycle, tierId, uint40(_totalSeconds));
