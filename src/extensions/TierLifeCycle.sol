@@ -429,7 +429,7 @@ abstract contract TierLifeCycle {
     /// Note: first of life cycle period is start of life cycle timestamp plus life cycle in total seconds.
     function _require48HrsBeforeEndOfFirstPeriod(uint256 tierId) private view {
         uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
-        if (block.timestamp <= _sub(_endOfFirstLifeCyclePeriod, 172800)) {
+        if (block.timestamp < _sub(_endOfFirstLifeCyclePeriod, 172800)) {
             _revert(InvalidTimeToInitialize.selector);
         }
     }
