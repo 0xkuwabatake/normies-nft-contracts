@@ -273,12 +273,11 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// Update fee is a mandatory non-gas fee that must must be paid in ether either in full or 
     /// proportionally by token owners when updating their token life cycle 
     /// at the end of life cycle for their owned tokenId.
-    /// - It is mandatory to be initialized prior to {TierLifeCycle - setStartOfLifeCycle} --
-    ///   this condition must be well-validated at child contract.
+    /// - It is mandatory to be initialized prior to {TierLifeCycle - _setStartOfLifeCycle} and
+    ///   `fee` cannot be set to zero value -- these conditions must be well-validated at child contract.
     /// 
     /// Requirements:
-    /// - Life cycle status must be at NotLive(0) / ReadyToStart(1) / ReadyToLive(2) / Live (3) /
-    ///   Paused(4) / Ending (5).
+    /// - Life cycle status must be at ReadyToStart(1) / ReadyToLive(2) / Live (3) / Paused(4) / Ending (5).
     /// - If Paused(4): it only can be initialized when tx's block.timestamp is greater than defined
     ///   pause of life cycle timestamp.
     /// - If Ending(5): it only can be initialized when tx's block.timestamp is greater than defined
@@ -296,7 +295,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
             if (block.timestamp <= endOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
             LibMap.set(_fee, tierId, uint128(fee));
         }
-        // NotLive(0) / ReadyToStart(1) / ReadyToLive(2) / Live(3)
+        // ReadyToStart(1) / ReadyToLive(2) / Live(3)
         LibMap.set(_fee, tierId, uint128(fee));
 
         emit TokenLifeCycleFeeUpdate(tierId, fee);
