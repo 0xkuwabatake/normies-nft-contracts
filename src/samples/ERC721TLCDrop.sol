@@ -371,17 +371,6 @@ contract ERC721TLCDrop is
         emit MintStatusUpdate(tierId, _state);
     }
 
-    ///////// TOKEN LIFE CYCLE UPDATE FEE SETTER /////////
-
-    /// See: {ERC721TLCToken - _setUpdateFee}.
-    function setUpdateFee(uint256 tierId, uint256 fee)
-        external
-        isValidTier(tierId)
-        onlyRolesOrOwner(1)
-    {
-        _setUpdateFee(tierId, fee);
-    }
-
     ///////// LIFE CYCLE FOR TIER ID SETTERS /////////
 
     /// @dev See: {TierLIfeCycle- _setLifeCycle}.
@@ -391,6 +380,16 @@ contract ERC721TLCDrop is
         onlyRolesOrOwner(2)
     {
         _setLifeCycle(tierId, numberOfDays);
+    }
+
+    /// See: {ERC721TLCToken - _setUpdateFee}.
+    function setUpdateFee(uint256 tierId, uint256 fee)
+        external
+        isValidTier(tierId)
+        isDefinedLifeCycle(tierId)
+        onlyRolesOrOwner(1)
+    {
+        _setUpdateFee(tierId, fee);
     }
 
     /// @dev See: {TierLifeCycle - _setStartOfLifeCycle}.
