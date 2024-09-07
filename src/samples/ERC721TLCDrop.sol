@@ -389,6 +389,7 @@ contract ERC721TLCDrop is
         isDefinedLifeCycle(tierId)
         onlyRolesOrOwner(1)
     {
+        if (fee == 0) _revert(UndefinedFee.selector);
         _setUpdateFee(tierId, fee);
     }
 
