@@ -278,14 +278,25 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// 
     /// Requirements:
     /// - Life cycle status must be at ReadyToStart(1) / Live (3) / Paused(4) / Ending (5).
+    /// - If Live(3): non-zero `fee` is able to be reinitialized start from 48 hours before 
+    ///   the end of first life cycle period.
     /// - If Paused(4): it only can be initialized when tx's block.timestamp is greater than defined
     ///   pause of life cycle timestamp.
     /// - If Ending(5): it only can be initialized when tx's block.timestamp is greater than defined
-    ///   end of life cycle timestamp.
+    ///   end of life cycle timestamp and in this situation the `fee` is set back to zero --
+    ///   this condition must be well-validated at child contract.
     /// ```
     function _setUpdateFee(uint256 tierId, uint256 fee) internal {
         _requireStatusIsReadyToStartOrLiveOrPausedOrEnding(tierId);
-        
+
+        // Live(3)
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
+            uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
+            if (block.timestamp < _sub(_endOfFirstLifeCyclePeriod, 172800)) {
+                _revert(InvalidTimeToInitialize.selector);
+            } 
+            LibMap.set(_fee, tierId, uint128(fee));
+        }
         // Paused(4)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) {
             if (block.timestamp <= pauseOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
@@ -296,7 +307,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
             if (block.timestamp <= endOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
             LibMap.set(_fee, tierId, uint128(fee));
         }
-        // ReadyToStart(1) / Live(3)
+        // ReadyToStart(1)
         LibMap.set(_fee, tierId, uint128(fee));
 
         emit TokenLifeCycleFeeUpdate(tierId, fee);
