@@ -277,14 +277,15 @@ abstract contract ERC721TLCToken is ERC721TLC {
     ///   `fee` cannot be set to zero value -- these conditions must be well-validated at child contract.
     /// 
     /// Requirements:
-    /// - Life cycle status must be at ReadyToStart(1) / ReadyToLive(2) / Live (3) / Paused(4) / Ending (5).
+    /// - Life cycle status must be at ReadyToStart(1) / Live (3) / Paused(4) / Ending (5).
     /// - If Paused(4): it only can be initialized when tx's block.timestamp is greater than defined
     ///   pause of life cycle timestamp.
     /// - If Ending(5): it only can be initialized when tx's block.timestamp is greater than defined
     ///   end of life cycle timestamp.
     /// ```
     function _setUpdateFee(uint256 tierId, uint256 fee) internal {
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) _revert(InvalidLifeCycleStatus.selector);
+        _requireStatusIsReadyToStartOrLiveOrPausedOrEnding(tierId);
+        
         // Paused(4)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) {
             if (block.timestamp <= pauseOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
@@ -295,7 +296,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
             if (block.timestamp <= endOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
             LibMap.set(_fee, tierId, uint128(fee));
         }
-        // ReadyToStart(1) / ReadyToLive(2) / Live(3)
+        // ReadyToStart(1) / Live(3)
         LibMap.set(_fee, tierId, uint128(fee));
 
         emit TokenLifeCycleFeeUpdate(tierId, fee);
@@ -388,6 +389,16 @@ abstract contract ERC721TLCToken is ERC721TLC {
     }
 
     ///////// PRIVATE FUNCTIONS ///////////////////////////////////////////////////////////////////O-'
+
+    /// @dev LifeCycleStatus must be at ReadyToStart(1) /  Live(3) / Paused(4) / Ending(5)
+    function _requireStatusIsReadyToStartOrLiveOrPausedOrEnding(uint256 tierId) private view {
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToLive) {
+            _revert(InvalidLifeCycleStatus.selector);
+        } 
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.Finished) {
+            _revert(InvalidLifeCycleStatus.selector);
+        } 
+    }
 
     ///////// PRIVATE TOKEN LIFE CYCLE UPDATE FEE VALIDATORS /////////
 
