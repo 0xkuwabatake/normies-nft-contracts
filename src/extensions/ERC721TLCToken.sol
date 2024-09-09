@@ -392,6 +392,9 @@ abstract contract ERC721TLCToken is ERC721TLC {
 
     /// @dev LifeCycleStatus must be at ReadyToStart(1) /  Live(3) / Paused(4) / Ending(5)
     function _requireStatusIsReadyToStartOrLiveOrPausedOrEnding(uint256 tierId) private view {
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) {
+            _revert(InvalidLifeCycleStatus.selector);
+        }
         if (lifeCycleStatus(tierId) == LifeCycleStatus.ReadyToLive) {
             _revert(InvalidLifeCycleStatus.selector);
         } 
