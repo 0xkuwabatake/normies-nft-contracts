@@ -386,7 +386,6 @@ contract ERC721TLCDrop is
     function setUpdateFee(uint256 tierId, uint256 fee)
         external
         isValidTier(tierId)
-        isDefinedLifeCycle(tierId)
         onlyRolesOrOwner(1)
     {
         if (fee == 0) _revert(UndefinedFee.selector);
