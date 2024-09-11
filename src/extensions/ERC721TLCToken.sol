@@ -17,7 +17,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// - Index 18 - 22 are allocated for mint `_fee` to mint `tierToMint` for the owner of tierId` #1 at child contract.
     /// - Index 23 - 27 is allocated for mint fee to mint `tierToMint` for the owner of `tierId` #2 at child contract.
     /// ```
-    LibMap.Uint128Map internal _fee;
+    LibMap.Uint64Map internal _fee;
 
     ///////// ERC-4906 EVENTS /////////////////////////////////////////////////////////////////////O-'
 
@@ -50,6 +50,9 @@ abstract contract ERC721TLCToken is ERC721TLC {
 
     /// @dev Revert with an error if token life cycle is unable to be updated.
     error UnableToUpdate();
+
+    /// @dev Revert with an error if fee is invalid.
+    error InvalidFee();
 
     ///////// PUBLIC GETTER FUNCTIONS /////////////////////////////////////////////////////////////O-'
 
@@ -288,6 +291,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// ```
     function _setUpdateFee(uint256 tierId, uint256 fee) internal {
         _requireStatusIsReadyToStartOrLiveOrPausedOrEnding(tierId);
+        if (fee > 0xFFFFFFFFFFFFFFFF) _revert(InvalidFee.selector);
 
         // Live(3)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
@@ -295,20 +299,20 @@ abstract contract ERC721TLCToken is ERC721TLC {
             if (block.timestamp < _sub(_endOfFirstLifeCyclePeriod, 172800)) {
                 _revert(InvalidTimeToInitialize.selector);
             } 
-            LibMap.set(_fee, tierId, uint128(fee));
+            LibMap.set(_fee, tierId, uint64(fee));
         }
         // Paused(4)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) {
             if (block.timestamp <= pauseOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
-            LibMap.set(_fee, tierId, uint128(fee));
+            LibMap.set(_fee, tierId, uint64(fee));
         }
         // Ending(5)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
             if (block.timestamp <= endOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
-            LibMap.set(_fee, tierId, uint128(fee));
+            LibMap.set(_fee, tierId, uint64(fee));
         }
         // ReadyToStart(1)
-        LibMap.set(_fee, tierId, uint128(fee));
+        LibMap.set(_fee, tierId, uint64(fee));
 
         emit TokenLifeCycleFeeUpdate(tierId, fee);
     }
