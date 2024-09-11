@@ -323,9 +323,10 @@ contract ERC721TLCDrop is
         isValidTier(tierId)
         onlyRolesOrOwner(1)
     {
+        if (fee > 0xFFFFFFFFFFFFFFFF) _revert(InvalidFee.selector);
         // See: {ERC721TLCToken - _fee}.
         // _fee index = `tierId` + 10
-        LibMap.set(_fee, _add(tierId, 10), uint128(fee));
+        LibMap.set(_fee, _add(tierId, 10), uint64(fee));
         emit MintFeeUpdate(tierId, fee);
     }
 
@@ -338,7 +339,7 @@ contract ERC721TLCDrop is
         uint256 _discountedFee = _calculateDiscountedMintFee(tierToMint, totalDiscount);
         // See: {ERC721TLCToken - _fee}.
         // _fee index = `tierToMint` + 15
-        LibMap.set(_fee, _add(tierToMint, 15), uint128(_discountedFee));
+        LibMap.set(_fee, _add(tierToMint, 15), uint64(_discountedFee));
         emit MintFeeForGenesisOwnerUpdate(1, tierToMint, _discountedFee);
     }
  
@@ -351,7 +352,7 @@ contract ERC721TLCDrop is
         uint256 _discountedFee = _calculateDiscountedMintFee(tierToMint, totalDiscount);
         // See: {ERC721TLCToken - _fee}.
         // _fee index = `tierToMint` + 20
-        LibMap.set(_fee, _add(tierToMint, 20), uint128(_discountedFee));
+        LibMap.set(_fee, _add(tierToMint, 20), uint64(_discountedFee));
         emit MintFeeForGenesisOwnerUpdate(2, tierToMint, _discountedFee);
     }
 
@@ -388,7 +389,7 @@ contract ERC721TLCDrop is
         isValidTier(tierId)
         onlyRolesOrOwner(1)
     {
-        if (fee == 0) _revert(UndefinedFee.selector);
+        if (fee == 0) _revert(InvalidFee.selector);
         _setUpdateFee(tierId, fee);
     }
 
