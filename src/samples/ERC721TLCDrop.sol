@@ -147,7 +147,7 @@ contract ERC721TLCDrop is
     ///////// CONSTRUCTOR /////////////////////////////////////////////////////////////////////////O-'
 
     constructor() ERC721TLC("ERC721TLC Drop","721TLC_DROP") {
-        _initializeOwner(msg.sender);
+        _initializeOwner(msg.sender);                                                              // For Test
         _setTransferValidator(0xA000027A9B2802E1ddf7000061001e5c005A0000);                                                               
         _setDefaultRoyalty(0xfa98aFe34D343D0e63C4C801EBce01d9D4459ECa, 25);                        // TESTNET !!! 
         _setWithdrawalAddress(0xfa98aFe34D343D0e63C4C801EBce01d9D4459ECa);                         // TESTNET !!! 
@@ -264,6 +264,7 @@ contract ERC721TLCDrop is
     ///////// WITHDRAWAL FUNCTIONS /////////
 
     /// @dev Withdraw all of the ether balance from contract to `withdrawalAddress`.
+    /// Note: It does not check if `withdrawalAddress` balance is zero.
     /// See: {TLCLib - forceSafeTransferAllETH}.
     function withdraw()
         external
@@ -309,6 +310,7 @@ contract ERC721TLCDrop is
     ///////// NFT DROP SETTERS /////////
 
     /// @dev Sets merkle `root` for `tierId`.
+    /// Note: It does not check if `root` is bytes32(0).
     function setMerkleRoot(uint256 tierId, bytes32 root)
         external
         isWhitelistMintTier(tierId)
@@ -324,34 +326,28 @@ contract ERC721TLCDrop is
         onlyRolesOrOwner(1)
     {
         if (fee > 0xFFFFFFFFFFFFFFFF) _revert(InvalidFee.selector);
-        // See: {ERC721TLCToken - _fee}.
-        // _fee index = `tierId` + 10
         LibMap.set(_fee, _add(tierId, 10), uint64(fee));
         emit MintFeeUpdate(tierId, fee);
     }
 
-    /// @dev Sets mint `fee` to mint `tierToMint` with `totalDiscount` in basis points for the owner of tierId #1.
+    /// @dev Sets mint `fee` to mint `tierToMint` with `totalDiscount` for the owner of tierId #1.
     function setMintFeeForTierOneOwner(uint256 tierToMint, uint256 totalDiscount)
         external
         isPublicMintTier(tierToMint)
         onlyRolesOrOwner(1)
     {
         uint256 _discountedFee = _calculateDiscountedMintFee(tierToMint, totalDiscount);
-        // See: {ERC721TLCToken - _fee}.
-        // _fee index = `tierToMint` + 15
         LibMap.set(_fee, _add(tierToMint, 15), uint64(_discountedFee));
         emit MintFeeForGenesisOwnerUpdate(1, tierToMint, _discountedFee);
     }
  
-    /// @dev Sets mint `fee` to mint `tierToMint` with `totalDiscount` in basis points for the owner of tierId #2.
+    /// @dev Sets mint `fee` to mint `tierToMint` with `totalDiscount` for the owner of tierId #2.
     function setMintFeeForTierTwoOwner(uint256 tierToMint, uint256 totalDiscount)
         external
         isPublicMintTier(tierToMint)
         onlyRolesOrOwner(1)
     {
         uint256 _discountedFee = _calculateDiscountedMintFee(tierToMint, totalDiscount);
-        // See: {ERC721TLCToken - _fee}.
-        // _fee index = `tierToMint` + 20
         LibMap.set(_fee, _add(tierToMint, 20), uint64(_discountedFee));
         emit MintFeeForGenesisOwnerUpdate(2, tierToMint, _discountedFee);
     }
@@ -394,7 +390,7 @@ contract ERC721TLCDrop is
     }
 
     /// @dev See: {TierLifeCycle - _setStartOfLifeCycle}.
-    /// Note: updateFee for `tierId` must be non-zero value.
+    /// Note: {ERC721TLCToken - updateFee} for `tierId` must be non-zero value.
     function setStartOfLifeCycle(uint256 tierId, uint256 timestamp)
         external
         isValidTier(tierId)
@@ -411,9 +407,7 @@ contract ERC721TLCDrop is
         onlyRolesOrOwner(2)
     {
         _setLifeCycleToLive(tierId);
-        if (totalSupply() != 0) {
-            _emitMetadataUpdate(_startTokenId(), totalSupply());
-        }
+        if (totalSupply() != 0) _emitMetadataUpdate(_startTokenId(), totalSupply());
     }
 
     /// @dev See: {TierLifeCycle - _pauseLifeCycle}.
@@ -450,8 +444,7 @@ contract ERC721TLCDrop is
         isValidTier(tierId)
         onlyRolesOrOwner(2)
     {
-        // Reset token life cycle update fee for `tierId` to 0.
-        _setUpdateFee(tierId, 0);
+        _setUpdateFee(tierId, 0); // Reset token life cycle update fee for `tierId` to 0
         _finishLifeCycle(tierId);
         _emitMetadataUpdate(_startTokenId(), totalSupply());
     }
@@ -513,13 +506,13 @@ contract ERC721TLCDrop is
     ///////// MULTICALL OPERATION /////////
 
     /// @dev Receives and executes a batch of function calls on this contract.
-    /// @dev See: {_multicall}
+    /// @dev See: {TLCLib - multicall}.
     function multicall(bytes[] calldata data)
         external
         onlyOwnerOrRoles(1)
         returns (bytes[] memory) 
     {
-        _multicall(data);
+        TLCLib.multicall(data);
     }
 
     ///////// PAUSED STATUS OPERATION /////////
@@ -621,13 +614,13 @@ contract ERC721TLCDrop is
     ///////// PRIVATE DISCOUNTED MINT FEE SETTER //////////
 
     /// @dev Calculate discounted mint fee for `tierId` with `totalDiscount` in basis points.
+    /// Note: Maximum basis points (BPS) is 10000.
     function _calculateDiscountedMintFee(uint256 tierId, uint256 totalDiscount)
         private
         view 
         returns (uint256 result)
     {
         if (mintFee(tierId) == 0) _revert(UndefinedFee.selector);
-        // Max basis points (BPS) is 10000
         if (totalDiscount > 10000) _revert(ExceedsMaxBPS.selector);
         uint256 _discount = (mintFee(tierId) * totalDiscount) / 10000;
         result = _sub(mintFee(tierId), _discount);
@@ -647,16 +640,16 @@ contract ERC721TLCDrop is
     }
 
     /// @dev Merkle proof validator.
-    /// See: {TLCLib - verifyMerkleLeaf}.
+    /// See: {TLCLib - verifyMerkle}.
     function _validateMerkleProof(
         address addr,
         uint256 tierId,
         bytes32[] calldata merkleProof
     ) private view {
-        // Leaf or node is the hashes of (`to`, `tierId`)
-        // Ref: https://github.com/OpenZeppelin/merkle-tree?tab=readme-ov-file#leaf-hash
+        // Leaf or node is the double hashes of (`addr`, `tierId`)
+        // Ref: https://www.rareskills.io/post/merkle-tree-second-preimage-attack
         bytes32 _leaf = keccak256(bytes.concat(keccak256(abi.encode(addr, tierId))));
-        bool _isValid = TLCLib.verifyMerkleLeaf(merkleProof, _merkleRoot[tierId], _leaf);
+        bool _isValid = TLCLib.verifyMerkle(merkleProof, _merkleRoot[tierId], _leaf);
         if (!_isValid) _revert(InvalidMerkleProof.selector);
     }
 
@@ -690,57 +683,5 @@ contract ERC721TLCDrop is
         } else {
             _revert(InvalidOwner.selector);
         }   
-    }
-        
-    ///////// PRIVATE HELPER FUNCTIONS /////////
-
-    /// @dev `DELEGATECALL` with the current contract to each calldata in `data`.
-    /// Source: https://github.com/Vectorized/solady/blob/main/src/utils/Multicallable.sol#L32
-    function _multicall(bytes[] calldata data) private returns (bytes[] memory) {
-        assembly {
-            mstore(0x00, 0x20)
-            mstore(0x20, data.length) // Store `data.length` into `results`.
-            // Early return if no data.
-            if iszero(data.length) { return(0x00, 0x40) }
-
-            let results := 0x40
-            // `shl` 5 is equivalent to multiplying by 0x20.
-            let end := shl(5, data.length)
-            // Copy the offsets from calldata into memory.
-            calldatacopy(0x40, data.offset, end)
-            // Offset into `results`.
-            let resultsOffset := end
-            // Pointer to the end of `results`.
-            end := add(results, end)
-
-            for {} 1 {} {
-                // The offset of the current bytes in the calldata.
-                let o := add(data.offset, mload(results))
-                let m := add(resultsOffset, 0x40)
-                // Copy the current bytes from calldata to the memory.
-                calldatacopy(
-                    m,
-                    add(o, 0x20), // The offset of the current bytes' bytes.
-                    calldataload(o) // The length of the current bytes.
-                )
-                if iszero(delegatecall(gas(), address(), m, calldataload(o), codesize(), 0x00)) {
-                    // Bubble up the revert if the delegatecall reverts.
-                    returndatacopy(0x00, 0x00, returndatasize())
-                    revert(0x00, returndatasize())
-                }
-                // Append the current `resultsOffset` into `results`.
-                mstore(results, resultsOffset)
-                results := add(results, 0x20)
-                // Append the `returndatasize()`, and the return data.
-                mstore(m, returndatasize())
-                returndatacopy(add(m, 0x20), 0x00, returndatasize())
-                // Advance the `resultsOffset` by `returndatasize() + 0x20`,
-                // rounded up to the next multiple of 32.
-                resultsOffset :=
-                    and(add(add(resultsOffset, returndatasize()), 0x3f), 0xffffffffffffffe0)
-                if iszero(lt(results, end)) { break }
-            }
-            return(0x00, add(resultsOffset, 0x40))
-        }
     }
 }
