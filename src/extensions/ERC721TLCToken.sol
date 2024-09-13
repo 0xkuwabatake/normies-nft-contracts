@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 
 import "../ERC721TLC.sol";
 
-/// @notice A customized ERC721TLC contract extension to manage each life cycle for tokenId`s logic.
+/// @notice A customized ERC721TLC contract extension logic for tokenId`s life cycle management.
 /// @author 0xkuwabatake (@0xkuwabatake)
 abstract contract ERC721TLCToken is ERC721TLC {
 
@@ -79,22 +79,24 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// 
     /// Note:
     /// - If Live(3): returns full update fee -- see {updateFee}.
-    /// - If Paused(4) / Ending(5): current time (block.timestamp) must be less than or equal to 
-    ///   defined pause or end of life cycle timestamp (offset).
+    /// - If Paused(4) / Ending(5) and current time (block.timestamp) is less than or equal to 
+    ///   defined pause or end of life cycle timestamp (offset), there would be a `_remainder`.
     ///   The `_remainder` is offset minus block.timestamp and its results will vary depending
-    ///   on its value.
-    /// - If current life cycle status is not at three statuses above, 
+    ///   on its value. Its return value will determine total value of token life cycle fee that
+    ///   need to be paid of to continue its life cycle token.
+    /// - If Paused(4) / Ending(5) and current time (block.timestamp) is greater than offset, then
+    ///   return 0 (zero) -- as mark of non-existent token update fee to be applied.
+    /// - If current life cycle status is not at one of three conditions above, 
     ///   it will constantly return 0 (zero) -- see {_validateAllReturnZeroUpdateTokenFee}.
     /// ```
     function updateTokenFee(uint256 tokenId) public view returns (uint256 result) {
         uint256 _tierId = tierId(tokenId);
         _validateAllReturnZeroUpdateTokenFee(_tierId);
 
-        // Live(3)
         if (lifeCycleStatus(_tierId) == LifeCycleStatus.Live) {
             return updateFee(_tierId);
         }
-        // Paused(4)
+        
         if (lifeCycleStatus(_tierId) == LifeCycleStatus.Paused) {
             if (block.timestamp <= pauseOfLifeCycle(_tierId)) {
                 uint256 _remainder = _sub(pauseOfLifeCycle(_tierId), block.timestamp);
@@ -111,7 +113,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
                 return 0;
             }
         } 
-        // Ending(5)
+        
         if (lifeCycleStatus(_tierId) == LifeCycleStatus.Ending) {
             if (block.timestamp <= endOfLifeCycle(_tierId)) {
                 uint256 _remainder = _sub(endOfLifeCycle(_tierId), block.timestamp);
@@ -131,7 +133,9 @@ abstract contract ERC721TLCToken is ERC721TLC {
     }
 
     /// @dev Returns current length of life cycle for `tokenId` in total seconds.
-    /// Note: non-zero value does not guarantee that `tokenId` is in life cycle period (Live).
+    /// Note: 
+    /// - Non-zero value does not guarantee that `tokenId` is in life cycle period (Live) and
+    ///   it will constantly return 0 (zero) for non-existent `tokenId`.      
     /// See: {ERC721TLC - _lifeCycleToken}.
     function lifeCycleToken(uint256 tokenId) public view returns (uint256) {
         return _lifeCycleToken(tokenId);
@@ -156,7 +160,9 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// - The non-zero value's rules are as followings:
     ///   - If token timestamp `tokenId` is greater than start of life cycle `_tierId`,
     ///     then start of life cycle `tokenId` is its current token timestamp --
-    ///     see {ERC721TLC - tokenTimestamp}.
+    ///     see {ERC721TLC - tokenTimestamp}. At some point, all of start of life cycle `tokenId`
+    ///     will fall into this condition as long as the life cycle period for its `_tierId` is
+    ///     at Live(3) status.
     ///   - If token timestamp `tokenId` is less than or equal to start of life cycle `_tierId`,
     ///     then start of life cycle `tokenId` is start of life cycle `_tierId`.
     /// ```
@@ -164,13 +170,11 @@ abstract contract ERC721TLCToken is ERC721TLC {
         uint256 _tierId = tierId(tokenId);
         _validateAllReturnZeroStartOrEndLifeCycleToken(tokenId);
 
-        // Live(3) / Paused(4) / Ending(5)
         if (
-            (lifeCycleStatus(_tierId) == LifeCycleStatus.Live && block.timestamp >= startOfLifeCycle(_tierId)) ||
-            (lifeCycleStatus(_tierId) == LifeCycleStatus.Paused && block.timestamp <= pauseOfLifeCycle(_tierId)) ||
-            (lifeCycleStatus(_tierId) == LifeCycleStatus.Ending && block.timestamp <= endOfLifeCycle(_tierId))
-           ) 
-        {
+            (lifeCycleStatus(_tierId) == LifeCycleStatus.Live && block.timestamp >= startOfLifeCycle(_tierId))
+                || (lifeCycleStatus(_tierId) == LifeCycleStatus.Paused && block.timestamp <= pauseOfLifeCycle(_tierId))
+                || (lifeCycleStatus(_tierId) == LifeCycleStatus.Ending && block.timestamp <= endOfLifeCycle(_tierId))
+        ) {
             if (tokenTimestamp(tokenId) > startOfLifeCycle(_tierId)) {
                 return tokenTimestamp(tokenId);
             } else {
@@ -199,7 +203,9 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// - The non-zero value's rules are as followings:
     ///   - If token timestamp `tokenId` is greater than start of life cycle `_tierId`,
     ///     then end of life cycle `tokenId` is the addition of its token timestamp and
-    ///     life cycle token `tokenId` -- see {lifeCycleToken}.
+    ///     life cycle token `tokenId` -- see {lifeCycleToken}. At some point, 
+    ///     all of end of life cycle `tokenId`will fall into this condition
+    ///     as long as the life cycle period for its `_tierId` is at Live(3) status.
     ///   - If token timestamp for `tokenId` is less than or equal to start of life cycle `_tierId`,
     ///     then end of life cycle `tokenId` is the addition start of life cycle `_tierId`
     ///     and life cycle token `tokenId`.
@@ -208,13 +214,11 @@ abstract contract ERC721TLCToken is ERC721TLC {
         uint256 _tierId = tierId(tokenId);
         _validateAllReturnZeroStartOrEndLifeCycleToken(tokenId);
 
-        // Live(3) / Paused(4) / Ending(5)
         if (
-            (lifeCycleStatus(_tierId) == LifeCycleStatus.Live && block.timestamp >= startOfLifeCycle(_tierId)) ||
-            (lifeCycleStatus(_tierId) == LifeCycleStatus.Paused && block.timestamp <= pauseOfLifeCycle(_tierId)) ||
-            (lifeCycleStatus(_tierId) == LifeCycleStatus.Ending && block.timestamp <= endOfLifeCycle(_tierId))
-           )
-        {
+            (lifeCycleStatus(_tierId) == LifeCycleStatus.Live && block.timestamp >= startOfLifeCycle(_tierId))
+                || (lifeCycleStatus(_tierId) == LifeCycleStatus.Paused && block.timestamp <= pauseOfLifeCycle(_tierId))
+                || (lifeCycleStatus(_tierId) == LifeCycleStatus.Ending && block.timestamp <= endOfLifeCycle(_tierId))
+        ) {
             result = endOfLifeCycleTokenUnchecked(tokenId);
         }
     }
@@ -224,7 +228,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// Note:
     /// - The intention of this method is to be queried by offchain indexer to get the stored
     ///   value of end of life cycle `tokenId` especially when the {endOfLifeCycleToken}'s value
-    ///   is overriden to zero value because of {_validateAllReturnZeroStartOrEndLifeCycleToken}.
+    ///   is overriden to zero value as defined at {_validateAllReturnZeroStartOrEndLifeCycleToken}.
     /// ```
     function endOfLifeCycleTokenUnchecked(uint256 tokenId) public view returns (uint256) {
         uint256 _tierId = tierId(tokenId);
@@ -243,12 +247,9 @@ abstract contract ERC721TLCToken is ERC721TLC {
         if (!_exists(tokenId)) _revert(TokenDoesNotExist.selector);
         uint256 _status = _tokenStatus(tokenId);
         
-        if (_status == 0) {
-            return "Active";
-        }
-        if (_status == 1) {
-            return "Inactive";
-        }
+        if (_status == 0) return "Active";
+        if (_status == 1) return "Inactive";
+        
     }
 
     ///////// INTERNAL FUNCTIONS //////////////////////////////////////////////////////////////////O-'
@@ -273,27 +274,28 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// @dev Sets token life cycle update `fee` for `tierId`.
     /// 
     /// Note:
-    /// Update fee is a mandatory non-gas fee that must must be paid in ether either in full or 
+    /// Update fee is a mandatory fee that need to be paid in native token (ether) either in full or 
     /// proportionally by token owners when updating their token life cycle 
     /// at the end of life cycle for their owned tokenId.
     /// - It is mandatory to be initialized prior to {TierLifeCycle - _setStartOfLifeCycle} and
-    ///   `fee` cannot be set to zero value -- these conditions must be well-validated at child contract.
+    ///   `fee` cannot be set to zero value or greater than 18.44 ether (see below) --
+    ///   these conditions must be well-validated at child contract.
     /// 
     /// Requirements:
     /// - Life cycle status must be at ReadyToStart(1) / Live (3) / Paused(4) / Ending (5).
+    /// - `fee` cannot be greater than 18446744073709551615 wei (18.446744073709551615 ether).
     /// - If Live(3): non-zero `fee` is able to be reinitialized start from 48 hours before 
     ///   the end of first life cycle period.
     /// - If Paused(4): it only can be initialized when tx's block.timestamp is greater than defined
     ///   pause of life cycle timestamp.
     /// - If Ending(5): it only can be initialized when tx's block.timestamp is greater than defined
-    ///   end of life cycle timestamp and in this situation the `fee` is set back to zero --
+    ///   end of life cycle timestamp and in this situation the `fee` must set back to 0 (zero) --
     ///   this condition must be well-validated at child contract.
     /// ```
     function _setUpdateFee(uint256 tierId, uint256 fee) internal {
         _requireStatusIsReadyToStartOrLiveOrPausedOrEnding(tierId);
         if (fee > 0xFFFFFFFFFFFFFFFF) _revert(InvalidFee.selector);
 
-        // Live(3)
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
             uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
             if (block.timestamp < _sub(_endOfFirstLifeCyclePeriod, 172800)) {
@@ -301,18 +303,18 @@ abstract contract ERC721TLCToken is ERC721TLC {
             } 
             LibMap.set(_fee, tierId, uint64(fee));
         }
-        // Paused(4)
+        
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Paused) {
             if (block.timestamp <= pauseOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
             LibMap.set(_fee, tierId, uint64(fee));
         }
-        // Ending(5)
+        
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Ending) {
             if (block.timestamp <= endOfLifeCycle(tierId)) _revert(InvalidTimeToInitialize.selector);
             LibMap.set(_fee, tierId, uint64(fee));
         }
-        // ReadyToStart(1)
-        LibMap.set(_fee, tierId, uint64(fee));
+        
+        LibMap.set(_fee, tierId, uint64(fee)); // ReadyToStart(1)
 
         emit TokenLifeCycleFeeUpdate(tierId, fee);
     }
@@ -337,7 +339,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     /// - LifeCycleStatus must be at Live(3) / Paused(4) / Ending(5).
     /// - If Live(3): it can be initialized 2 hours (7200 seconds) before 
     ///   end of life cycle token `tokenId` -- the condition is defined as constant to prevent
-    ///   contract owner update its token life cycle too soon but it's still fair enough for them.
+    ///   token owner update its token life cycle too early from end of life cycle token `tokenId`.
     /// - If Paused(4) / Ending(5): beside of condition above, the current time must be validated 
     ///   with end of life cycle `tokenId` and `offset` -- see {_validateOffset}, 
     ///   before comparing current time with `offset` to get the remainder as the basis of total fee 
@@ -346,17 +348,14 @@ abstract contract ERC721TLCToken is ERC721TLC {
     function _validateUpdateFee(uint256 tokenId) internal {
         uint256 _tierId = tierId(tokenId);
 
-        // Live(3)
         if (lifeCycleStatus(_tierId) == LifeCycleStatus.Live) {
             if (block.timestamp < _sub(endOfLifeCycleToken(tokenId), 7200)) {                      
                 _revert(InvalidTimeToUpdate.selector);
             } 
             _validateFullUpdateFee(tokenId);
-        // Paused(4)
         } else if (lifeCycleStatus(_tierId) == LifeCycleStatus.Paused) {
             _validateOffset(tokenId, pauseOfLifeCycle(_tierId));
             _validateRemainder(tokenId, pauseOfLifeCycle(_tierId));
-        // Ending(5)
         } else if (lifeCycleStatus(_tierId) == LifeCycleStatus.Ending) {
             _validateOffset(tokenId, endOfLifeCycle(_tierId));
             _validateRemainder(tokenId, endOfLifeCycle(_tierId));
@@ -378,7 +377,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
     ///
     /// Note: 
     /// - The return value will be queried and converted into string literal at {tokenStatus}.
-    /// - The return value will be quearied "as is" at {ERC721TLCDataURI - _header} metadata.
+    /// - The return value will be queried "as is" at {ERC721TLCDataURI - _header} metadata.
     ///
     /// Conditions:
     /// - If both of start and end of life cycle `tokenId` are zero value, return 0.
@@ -392,6 +391,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
                 return 0;
             }
         }
+
         if (startOfLifeCycleToken(tokenId) != 0) {
             if (endOfLifeCycleToken(tokenId) != 0) {
                 if (block.timestamp > endOfLifeCycleToken(tokenId)) {
@@ -405,7 +405,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
 
     ///////// PRIVATE FUNCTIONS ///////////////////////////////////////////////////////////////////O-'
 
-    /// @dev LifeCycleStatus must be at ReadyToStart(1) /  Live(3) / Paused(4) / Ending(5)
+    /// @dev LifeCycleStatus must be at ReadyToStart(1) / Live(3) / Paused(4) / Ending(5)
     function _requireStatusIsReadyToStartOrLiveOrPausedOrEnding(uint256 tierId) private view {
         if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) {
             _revert(InvalidLifeCycleStatus.selector);
@@ -428,8 +428,8 @@ abstract contract ERC721TLCToken is ERC721TLC {
     ///
     /// Requirement:
     /// - The operation can be initiated start 2 hours (7200 seconds) before 
-    ///   end of life cycle token `tokenId` and until 1 minute (60 seconds) before 
-    ///   current time (block.timestamp) has reached the `offset`.
+    ///   end of life cycle token `tokenId` and maximum until 1 minute (60 seconds) before 
+    ///   current time (block.timestamp) meets the `offset`.
     /// ```
     function _validateOffset(uint256 tokenId, uint256 offset) private view {
         if (block.timestamp < _sub(endOfLifeCycleToken(tokenId), 7200)) {                                      
@@ -451,15 +451,9 @@ abstract contract ERC721TLCToken is ERC721TLC {
         uint256 _tierId = tierId(tokenId);
         uint256 _remainder = _sub(offset, block.timestamp);
 
-        if (_remainder >= lifeCycle(_tierId)) {
-            _validateFullUpdateFee(tokenId);
-        }
-        if (_remainder < lifeCycle(_tierId)) {
-            _validateProportionalUpdateFee(tokenId, offset);
-        } 
-        if (_remainder == 0) {
-            _revert(UnableToUpdate.selector);
-        }
+        if (_remainder >= lifeCycle(_tierId)) _validateFullUpdateFee(tokenId);
+        if (_remainder < lifeCycle(_tierId)) _validateProportionalUpdateFee(tokenId, offset);
+        if (_remainder == 0) _revert(UnableToUpdate.selector);
     }
 
     /// @dev Full token life cycle update fee for `tokenId` validator.
@@ -496,18 +490,11 @@ abstract contract ERC721TLCToken is ERC721TLC {
         view
         returns (uint256 result)
     {
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) {
-            return 0;
-        }
-        if (lifeCycleStatus(tierId) != LifeCycleStatus.Live) {
-            return 0;
-        }
-        if (lifeCycleStatus(tierId) != LifeCycleStatus.Paused) {
-            return 0;
-        }
-        if (lifeCycleStatus(tierId) != LifeCycleStatus.Ending) {
-            return 0;
-        }
+        if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) return 0;
+        if (lifeCycleStatus(tierId) != LifeCycleStatus.Live) return 0;
+        if (lifeCycleStatus(tierId) != LifeCycleStatus.Paused) return 0;
+        if (lifeCycleStatus(tierId) != LifeCycleStatus.Ending) return 0;
+        
     }
 
     /// @dev All life cycle statuses and conditions which start or end of life cycle `tokenId` returns 0 (zero).
@@ -524,29 +511,16 @@ abstract contract ERC721TLCToken is ERC721TLC {
         returns (uint256 result)
     {
         uint256 _tierId = tierId(tokenId);
-        // NotLive(0)
-        if (lifeCycleStatus(_tierId) == LifeCycleStatus.NotLive) {
-            return 0;
-        }
-        // ReadyToStart(1)
-        if (lifeCycleStatus(_tierId) == LifeCycleStatus.ReadyToStart) {
-            return 0;
-        }
-        // ReadyToLive(2)
-        if (lifeCycleStatus(_tierId) == LifeCycleStatus.ReadyToLive) {
-            return 0;
-        }
-        // Finished(6).
-        if (lifeCycleStatus(_tierId) == LifeCycleStatus.Finished) {
-            return 0;
-        }
-        // Live(3) / Paused(4) / Ending(5)
+    
+        if (lifeCycleStatus(_tierId) == LifeCycleStatus.NotLive) return 0;
+        if (lifeCycleStatus(_tierId) == LifeCycleStatus.ReadyToStart) return 0;
+        if (lifeCycleStatus(_tierId) == LifeCycleStatus.ReadyToLive) return 0;
+        if (lifeCycleStatus(_tierId) == LifeCycleStatus.Finished) return 0;
         if (
-            (lifeCycleStatus(_tierId) == LifeCycleStatus.Live && block.timestamp < startOfLifeCycle(_tierId)) ||
-            (lifeCycleStatus(_tierId) == LifeCycleStatus.Paused && block.timestamp > pauseOfLifeCycle(_tierId)) ||
-            (lifeCycleStatus(_tierId) == LifeCycleStatus.Ending && block.timestamp > endOfLifeCycle(_tierId))
-           )
-        {
+            (lifeCycleStatus(_tierId) == LifeCycleStatus.Live && block.timestamp < startOfLifeCycle(_tierId))
+                || (lifeCycleStatus(_tierId) == LifeCycleStatus.Paused && block.timestamp > pauseOfLifeCycle(_tierId))
+                || (lifeCycleStatus(_tierId) == LifeCycleStatus.Ending && block.timestamp > endOfLifeCycle(_tierId))
+        ) {
             return 0;
         }
     }

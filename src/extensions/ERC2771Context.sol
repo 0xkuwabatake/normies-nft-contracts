@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-/// @notice Contract Extension to provide context based on ERC-2771.
+/// @notice Contract extension for ERC-2771.
 /// @author 0xkuwabatake(@0xkuwabatake)
 /// @author Modified from OpenZeppelin
 /// (https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/metatx/ERC2771Context.sol)
@@ -52,11 +52,9 @@ abstract contract ERC2771Context {
 
     ///////// INTERNAL GETTER FUNCTIONS ///////////////////////////////////////////////////////////O-'
 
-    /**
-     * @dev Override for `msg.sender`. Defaults to the original `msg.sender` whenever
-     * a call is not performed by the trusted forwarder or the calldata length is less than
-     * 20 bytes (an address length).
-     */
+    /// @dev Override for `msg.sender`.
+    /// Defaults to the original `msg.sender` whenever a call is not performed by 
+    /// the trusted forwarder or the calldata length is less than 20 bytes (an address length).
     function _msgSender() internal view returns (address sender) {
         if (isTrustedForwarder(msg.sender)) {
             // The assembly code is more direct than the Solidity version using `abi.decode`.
@@ -69,11 +67,9 @@ abstract contract ERC2771Context {
         }
     }
 
-    /**
-     * @dev Override for `msg.data`. Defaults to the original `msg.data` whenever
-     * a call is not performed by the trusted forwarder or the calldata length is less than
-     * 20 bytes (an address length).
-     */
+    /// @dev Override for `msg.data`. 
+    /// Defaults to the original `msg.data` whenever a call is not performed by 
+    /// the trusted forwarder or the calldata length is less than 20 bytes (an address length).
     function _msgData() internal view returns (bytes calldata) {
         if (isTrustedForwarder(msg.sender)) {
             return msg.data[:msg.data.length - 20];

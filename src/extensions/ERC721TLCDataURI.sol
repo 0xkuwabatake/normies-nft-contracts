@@ -54,17 +54,15 @@ abstract contract ERC721TLCDataURI is ERC721TLCToken {
         if (!_exists(tokenId)) _revert(TokenDoesNotExist.selector);
         uint256 _tierId = tierId(tokenId);
 
-        // Live(3) / Paused(4) / Ending(5)
         if (
-            (lifeCycleStatus(_tierId) == LifeCycleStatus.Live && block.timestamp >= startOfLifeCycle(_tierId)) ||
-            (lifeCycleStatus(_tierId) == LifeCycleStatus.Paused && block.timestamp <= pauseOfLifeCycle(_tierId)) ||
-            (lifeCycleStatus(_tierId) == LifeCycleStatus.Ending && block.timestamp <= endOfLifeCycle(_tierId))
-           ) 
-        {
+            (lifeCycleStatus(_tierId) == LifeCycleStatus.Live && block.timestamp >= startOfLifeCycle(_tierId))
+                || (lifeCycleStatus(_tierId) == LifeCycleStatus.Paused && block.timestamp <= pauseOfLifeCycle(_tierId))
+                || (lifeCycleStatus(_tierId) == LifeCycleStatus.Ending && block.timestamp <= endOfLifeCycle(_tierId))
+        ) {
             return string(
                 abi.encodePacked(
                     "data:application/json;base64,",
-                    TLCLib.toBase64(bytes(string.concat(_header(tokenId),_body(tokenId),_expiryDate(tokenId),'"}]}')))
+                    TLCLib.toBase64(bytes(string.concat(_header(tokenId), _body(tokenId), _expiryDate(tokenId), '"}]}')))
                 )
             );
         } else {
@@ -87,6 +85,7 @@ abstract contract ERC721TLCDataURI is ERC721TLCToken {
     ///////// INTERNAL TIER DATA URI SETTER /////////
 
     /// @dev Sets tier DataURI for `tierId`.
+    /// See: {ERC721TLCToken - _emitMetadataUpdate}.
     function _setTierDataURI(
         uint256 tierId, 
         string memory name,
@@ -98,10 +97,7 @@ abstract contract ERC721TLCDataURI is ERC721TLCToken {
         _tierDataURI[tierId] = DataURI(name, description, tierName, images, animationURLs);
         emit TierDataURIUpdate(tierId, name, description, tierName, images, animationURLs);
 
-        // When total supply of tokens is not zero, {_emitMetadataUpdate}.
-        if (totalSupply() != 0) {
-            _emitMetadataUpdate(_startTokenId(), totalSupply());
-        }
+        if (totalSupply() != 0) _emitMetadataUpdate(_startTokenId(), totalSupply());
     }
 
     ///////// PRIVATE FUNCTIONS ///////////////////////////////////////////////////////////////////O-'
@@ -157,13 +153,9 @@ abstract contract ERC721TLCDataURI is ERC721TLCToken {
         // It follows the ISO 8601 standard (YYYY-MM-DD) by appending "0" prefix
         // to month before october and to day before day tenth.
         // Ref: https://www.iso.org/iso-8601-date-and-time-format.html
-        if (month < 10) {
-            _month = string.concat("0", TLCLib.toString(month));
-        }
-        if (day < 10) {
-            _day = string.concat("0", TLCLib.toString(day));
-        }
-
+        if (month < 10) _month = string.concat("0", TLCLib.toString(month));
+        if (day < 10) _day = string.concat("0", TLCLib.toString(day));
+        
         return string(
             abi.encodePacked(
                 '"},{"trait_type":"Expiry Date","value":"'
