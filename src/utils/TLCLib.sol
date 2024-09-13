@@ -6,7 +6,8 @@ pragma solidity ^0.8.4;
 /// @author Modified from Solady (https://github.com/vectorized/solady/blob/main/src/utils/SafeTransferLib.sol)
 /// @author Modified from Solady (https://github.com/vectorized/solady/blob/main/src/utils/MerkleProofLib.sol)
 /// @author Modified from Solady (https://github.com/vectorized/solady/blob/main/src/utils/Base64.sol)
-/// @author Solady (https://github.com/vectorized/solady/blob/main/src/utils/DateTimeLib.sol)
+/// @author Modified from Solady (https://github.com/vectorized/solady/blob/main/src/utils/DateTimeLib.sol)
+/// @author Modified from Solady (https://github.com/vectorized/solady/blob/main/src/utils/Multicallable.sol)
 /// @author Modified from Chiru Labs (https://github.com/chiru-labs/ERC721A/blob/main/contracts/ERC721A.sol)
 library TLCLib {
 
@@ -27,7 +28,7 @@ library TLCLib {
 
     /// @dev Returns whether `leaf` exists in the Merkle tree with `root`, given `proof`.
     /// Source: https://github.com/Vectorized/solady/blob/main/src/utils/MerkleProofLib.sol#L46
-    function verifyMerkleLeaf(bytes32[] calldata proof, bytes32 root, bytes32 leaf)
+    function verifyMerkle(bytes32[] calldata proof, bytes32 root, bytes32 leaf)
         internal
         pure
         returns (bool isValid)
@@ -191,6 +192,56 @@ library TLCLib {
             day := add(sub(doy, shr(11, add(mul(mp, 62719), 769))), 1)
             month := byte(mp, shl(160, 0x030405060708090a0b0c0102))
             year := add(add(yoe, mul(div(epochDay, 146097), 400)), lt(month, 3))
+        }
+    }
+
+    /// @dev `DELEGATECALL` with the current contract to each calldata in `data`.
+    /// Source: https://github.com/Vectorized/solady/blob/main/src/utils/Multicallable.sol#L32
+    function multicall(bytes[] calldata data) internal returns (bytes[] memory) {
+        assembly {
+            mstore(0x00, 0x20)
+            mstore(0x20, data.length) // Store `data.length` into `results`.
+            // Early return if no data.
+            if iszero(data.length) { return(0x00, 0x40) }
+
+            let results := 0x40
+            // `shl` 5 is equivalent to multiplying by 0x20.
+            let end := shl(5, data.length)
+            // Copy the offsets from calldata into memory.
+            calldatacopy(0x40, data.offset, end)
+            // Offset into `results`.
+            let resultsOffset := end
+            // Pointer to the end of `results`.
+            end := add(results, end)
+
+            for {} 1 {} {
+                // The offset of the current bytes in the calldata.
+                let o := add(data.offset, mload(results))
+                let m := add(resultsOffset, 0x40)
+                // Copy the current bytes from calldata to the memory.
+                calldatacopy(
+                    m,
+                    add(o, 0x20), // The offset of the current bytes' bytes.
+                    calldataload(o) // The length of the current bytes.
+                )
+                if iszero(delegatecall(gas(), address(), m, calldataload(o), codesize(), 0x00)) {
+                    // Bubble up the revert if the delegatecall reverts.
+                    returndatacopy(0x00, 0x00, returndatasize())
+                    revert(0x00, returndatasize())
+                }
+                // Append the current `resultsOffset` into `results`.
+                mstore(results, resultsOffset)
+                results := add(results, 0x20)
+                // Append the `returndatasize()`, and the return data.
+                mstore(m, returndatasize())
+                returndatacopy(add(m, 0x20), 0x00, returndatasize())
+                // Advance the `resultsOffset` by `returndatasize() + 0x20`,
+                // rounded up to the next multiple of 32.
+                resultsOffset :=
+                    and(add(add(resultsOffset, returndatasize()), 0x3f), 0xffffffffffffffe0)
+                if iszero(lt(results, end)) { break }
+            }
+            return(0x00, add(resultsOffset, 0x40))
         }
     }
 }
