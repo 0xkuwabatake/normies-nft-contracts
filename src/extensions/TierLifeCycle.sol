@@ -147,10 +147,7 @@ abstract contract TierLifeCycle {
         }
         
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
-            uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
-            if (block.timestamp < _sub(_endOfFirstLifeCyclePeriod, 172800)) {
-                _revert(InvalidTimeToInitialize.selector);
-            } 
+            _require48HrsBeforeEndOfFirstLifeCyclePeriod(tierId);
             LibMap.set(_lifeCycle, tierId, uint40(_totalSeconds));
         }
         
@@ -222,7 +219,7 @@ abstract contract TierLifeCycle {
     /// Note:
     /// Pause of a life cycle is a mark time for the ongoing life cycle period to be stopped 
     /// temporarily.
-    /// - Once it had been defined, the fee to update token life cycle would be calculated
+    /// - Once it had been defined, the fee to update token life cycle fee would be calculated
     ///   proportionally when the current time (block.timestamp) is started to have a remainder 
     ///   which less than its life cycle token -- see {ERC721TLCToken - updateTokenFee}.
     /// - When the current time had passed its defined pause of life cycle timestamp,
@@ -359,7 +356,16 @@ abstract contract TierLifeCycle {
         }
     }
 
-    ///////// PRIVATE LIFE CYCLE STATUS FOR TIER ID VALIDATORS /////////
+    ///////// INTERNAL & PRIVATE LIFE CYCLE STATUS FOR TIER ID VALIDATORS /////////
+
+    /// @dev Current time must have passed 48 hours before the end of first life cycle period.
+    /// Note: first of life cycle period is start of life cycle timestamp plus life cycle in total seconds.
+    function _require48HrsBeforeEndOfFirstLifeCyclePeriod(uint256 tierId) internal view {
+        uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
+        if (block.timestamp < _sub(_endOfFirstLifeCyclePeriod, 172800)) {
+            _revert(InvalidTimeToInitialize.selector);
+        }
+    }
 
     /// @dev LifeCycleStatus must be at Live(3) for `tierId`.
     function _requireStatusIsLive(uint256 tierId) private view {
@@ -422,18 +428,9 @@ abstract contract TierLifeCycle {
         }
     }
 
-    /// @dev Timestamp must be greater than block.timestamp but less than 1099511627775 (36812 AD).
+    /// @dev Timestamp must be greater than block.timestamp but less than 1099511627776 (36812 AD).
     function _requireValidTimestamp(uint256 timestamp) private view {
         if (timestamp <= block.timestamp) _revert(InvalidTimestamp.selector);
         if (timestamp > 0xFFFFFFFFFF) _revert(InvalidTimestamp.selector);
-    }
-
-    /// @dev Current time must have passed 48 hours before the end of first life cycle period.
-    /// Note: first of life cycle period is start of life cycle timestamp plus life cycle in total seconds.
-    function _require48HrsBeforeEndOfFirstLifeCyclePeriod(uint256 tierId) private view {
-        uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
-        if (block.timestamp < _sub(_endOfFirstLifeCyclePeriod, 172800)) {
-            _revert(InvalidTimeToInitialize.selector);
-        }
     }
 }

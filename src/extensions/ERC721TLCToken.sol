@@ -297,10 +297,7 @@ abstract contract ERC721TLCToken is ERC721TLC {
         if (fee > 0xFFFFFFFFFFFFFFFF) _revert(InvalidFee.selector);
 
         if (lifeCycleStatus(tierId) == LifeCycleStatus.Live) {
-            uint256 _endOfFirstLifeCyclePeriod = _add(startOfLifeCycle(tierId), lifeCycle(tierId));
-            if (block.timestamp < _sub(_endOfFirstLifeCyclePeriod, 172800)) {
-                _revert(InvalidTimeToInitialize.selector);
-            } 
+            _require48HrsBeforeEndOfFirstLifeCyclePeriod(tierId); 
             LibMap.set(_fee, tierId, uint64(fee));
         }
         
