@@ -25,7 +25,7 @@ interface IERC721TransferValidator {
 
 /// @notice      POAP implementation contract by Normies (https://normi.es)
 /// @author      0xkuwabatake (@0xkuwabatake)
-/// @custom:note Non-logical adjustments implementation contract from:
+/// @custom:note Non-trivial adjustments implementation contract that been deployed at: 
 ///              https://basescan.org/address/0x000000008e12c2701d9be1bfc20f29185f892fcc#code
 contract NormiesComet is
     ERC721T,
