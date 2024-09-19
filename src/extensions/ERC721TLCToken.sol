@@ -487,11 +487,9 @@ abstract contract ERC721TLCToken is ERC721TLC {
         view
         returns (uint256 result)
     {
-        if (lifeCycleStatus(tierId) == LifeCycleStatus.NotLive) return 0;
         if (lifeCycleStatus(tierId) != LifeCycleStatus.Live) return 0;
         if (lifeCycleStatus(tierId) != LifeCycleStatus.Paused) return 0;
         if (lifeCycleStatus(tierId) != LifeCycleStatus.Ending) return 0;
-        
     }
 
     /// @dev All life cycle statuses and conditions which start or end of life cycle `tokenId` returns 0 (zero).
